@@ -41,15 +41,16 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
         _isLoading,
         _userMessage,
         _errorMessage
-    ) { status, accounts, activeUser, daemonRunning, loading, msg, err ->
+    ) { args: Array<Any?> ->
+        @Suppress("UNCHECKED_CAST")
         UiState(
-            status = status,
-            accounts = accounts,
-            activeUser = activeUser,
-            isDaemonRunning = daemonRunning,
-            isLoading = loading,
-            userMessage = msg,
-            errorMessage = err
+            status = args[0] as PortalStatus,
+            accounts = args[1] as Map<String, String>,
+            activeUser = args[2] as? String,
+            isDaemonRunning = args[3] as Boolean,
+            isLoading = args[4] as Boolean,
+            userMessage = args[5] as? String,
+            errorMessage = args[6] as? String
         )
     }.stateIn(
         scope = viewModelScope,
