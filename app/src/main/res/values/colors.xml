@@ -1,0 +1,8 @@
+<resources>
+    <color name="pesu_primary">#00796B</color>
+    <color name="pesu_primary_dark">#004D40</color>
+    <color name="pesu_accent">#00B0FF</color>
+    <color name="status_green">#2E7D32</color>
+    <color name="status_amber">#F57F17</color>
+    <color name="status_red">#C62828</color>
+</resources>

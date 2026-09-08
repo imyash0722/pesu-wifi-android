@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">PESU WiFi</string>
+    <string name="channel_keepalive_name">WiFi Keepalive</string>
+    <string name="channel_keepalive_desc">Ongoing captive portal session monitoring</string>
+</resources>
