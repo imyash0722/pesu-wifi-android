@@ -51,12 +51,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.imyash.pesuwifi.ui.components.AccountDialog
+import com.imyash.pesuwifi.ui.components.FirstLaunchPermissionsDialog
 import com.imyash.pesuwifi.ui.components.PermissionsCard
 import com.imyash.pesuwifi.ui.components.PermissionsRequiredDialog
 import com.imyash.pesuwifi.ui.components.StatusCard
 import com.imyash.pesuwifi.ui.theme.StatusAmber
 import com.imyash.pesuwifi.ui.theme.StatusGreen
+import com.imyash.pesuwifi.util.PermissionManager
 import com.imyash.pesuwifi.viewmodel.PortalViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,8 +74,22 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
     var showAddAccountDialog by remember { mutableStateOf(false) }
     var showPermissionsDialog by remember { mutableStateOf(false) }
+    var showFirstLaunchDialog by remember {
+        mutableStateOf(
+            !PermissionManager.hasSeenFirstLaunchPrompt(context) &&
+                !state.permissionState.allEssentialGranted
+        )
+    }
+
+    LaunchedEffect(Unit) {
+        if (!PermissionManager.hasSeenFirstLaunchPrompt(context) && state.permissionState.allEssentialGranted) {
+            PermissionManager.setSeenFirstLaunchPrompt(context, true)
+        }
+    }
 
     LaunchedEffect(state.userMessage) {
         state.userMessage?.let {
@@ -331,6 +348,32 @@ fun HomeScreen(
                 onSave = { u, p ->
                     viewModel.saveAccount(u, p)
                     showAddAccountDialog = false
+                }
+            )
+        }
+
+        if (showFirstLaunchDialog) {
+            FirstLaunchPermissionsDialog(
+                permissionState = state.permissionState,
+                onRequestNotification = onRequestNotification,
+                onRequestBatteryOptimization = onRequestBatteryOptimization,
+                onRequestExactAlarm = onRequestExactAlarm,
+                onGrantAll = {
+                    PermissionManager.setSeenFirstLaunchPrompt(context, true)
+                    if (state.permissionState.allEssentialGranted) {
+                        showFirstLaunchDialog = false
+                    } else {
+                        when {
+                            !state.permissionState.isBatteryOptimizationIgnored -> onRequestBatteryOptimization()
+                            !state.permissionState.isNotificationGranted -> onRequestNotification()
+                            !state.permissionState.canScheduleExactAlarms -> onRequestExactAlarm()
+                            else -> showFirstLaunchDialog = false
+                        }
+                    }
+                },
+                onDismiss = {
+                    PermissionManager.setSeenFirstLaunchPrompt(context, true)
+                    showFirstLaunchDialog = false
                 }
             )
         }

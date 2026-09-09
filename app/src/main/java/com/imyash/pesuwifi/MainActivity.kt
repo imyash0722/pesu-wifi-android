@@ -47,7 +47,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        checkNotificationPermission()
+        if (PermissionManager.hasSeenFirstLaunchPrompt(this)) {
+            checkNotificationPermission()
+        }
 
         setContent {
             PesuWifiTheme {

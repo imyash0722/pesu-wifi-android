@@ -34,6 +34,19 @@ data class PermissionState(
 
 object PermissionManager {
 
+    private const val PREFS_SETTINGS = "pesu_wifi_settings"
+    private const val KEY_SEEN_FIRST_LAUNCH_PROMPT = "has_seen_first_launch_prompt"
+
+    fun hasSeenFirstLaunchPrompt(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_SEEN_FIRST_LAUNCH_PROMPT, false)
+    }
+
+    fun setSeenFirstLaunchPrompt(context: Context, seen: Boolean = true) {
+        val prefs = context.getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_SEEN_FIRST_LAUNCH_PROMPT, seen).apply()
+    }
+
     fun getPermissionState(context: Context): PermissionState {
         return PermissionState(
             isNotificationGranted = isNotificationPermissionGranted(context),
