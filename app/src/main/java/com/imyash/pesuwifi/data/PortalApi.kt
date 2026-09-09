@@ -1,6 +1,6 @@
 package com.imyash.pesuwifi.data
 
-import android.util.Xml
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -9,12 +9,14 @@ import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
 import java.io.StringReader
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
 import javax.net.SocketFactory
 
 object PortalApi {
+    private const val TAG = "PesuWifiApi"
     private const val PORTAL_BASE = "http://192.168.254.1:8090"
     private const val LOGIN_URL = "$PORTAL_BASE/login.xml"
     private const val LOGOUT_URL = "$PORTAL_BASE/logout.xml"
@@ -70,13 +72,16 @@ object PortalApi {
     suspend fun isPortalOnline(): Boolean = withContext(Dispatchers.IO) {
         try {
             val request = Request.Builder()
-                .url(PORTAL_BASE)
+                .url("$PORTAL_BASE/httpclient.html")
                 .get()
                 .build()
             getClient(4000).newCall(request).execute().use { response ->
-                response.isSuccessful
+                val ok = response.code in 200..499
+                Log.d(TAG, "isPortalOnline check code: ${response.code}, ok: $ok")
+                ok
             }
         } catch (e: Exception) {
+            Log.w(TAG, "isPortalOnline check failed: ${e.message}")
             false
         }
     }
@@ -100,9 +105,12 @@ object PortalApi {
                     val parsed = parseXml(body)
                     val ack = parsed["ack"]?.trim()?.lowercase() ?: ""
                     val status = parsed["status"]?.trim()?.lowercase() ?: ""
-                    ack == "ack" || status.contains("live") || status.contains("ok")
+                    val live = ack == "ack" || status.contains("live") || status.contains("ok")
+                    Log.d(TAG, "checkLive for $username: live=$live (ack='$ack', status='$status')")
+                    live
                 }
             } catch (e: Exception) {
+                Log.w(TAG, "checkLive attempt failed for $username: ${e.message}")
                 false
             }
         }
@@ -121,6 +129,7 @@ object PortalApi {
      */
     suspend fun login(username: String, password: String): Result<String> = withContext(Dispatchers.IO) {
         try {
+            Log.i(TAG, "Attempting portal login for user: $username")
             val formBody = FormBody.Builder()
                 .add("mode", "191")
                 .add("username", username)
@@ -136,23 +145,32 @@ object PortalApi {
 
             getClient(8000).newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: ""
+                Log.d(TAG, "Login raw response: $body")
                 val parsed = parseXml(body)
                 val status = (parsed["status"] ?: "").trim().uppercase()
                 val message = (parsed["message"] ?: "").trim()
 
-                if (status == "LIVE") {
-                    Result.success("Signed in as $username")
-                } else if (message.contains("signed in", ignoreCase = true)) {
-                    Result.success("Signed in as $username")
-                } else if (message.contains("failed", ignoreCase = true) || message.contains("invalid", ignoreCase = true)) {
-                    Result.failure(Exception(if (message.isNotEmpty()) message else "Login failed: Invalid credentials"))
-                } else if (status.isNotEmpty()) {
-                    Result.success("Signed in as $username")
+                val isLive = status == "LIVE" ||
+                    message.contains("signed in", ignoreCase = true) ||
+                    message.contains("you are signed in", ignoreCase = true)
+
+                if (isLive) {
+                    val successMsg = if (message.isNotEmpty()) message else "Signed in as $username"
+                    Log.i(TAG, "Login success: $successMsg")
+                    Result.success(successMsg)
                 } else {
-                    Result.failure(Exception(if (message.isNotEmpty()) message else "Unexpected response from portal"))
+                    val errorReason = when {
+                        message.isNotEmpty() -> message
+                        status == "LOGIN" -> "Login failed. Check credentials or concurrent session limit."
+                        status.isNotEmpty() -> "Login failed ($status)"
+                        else -> "Unexpected response from portal"
+                    }
+                    Log.e(TAG, "Login failed: status='$status', message='$message', errorReason='$errorReason'")
+                    Result.failure(Exception(errorReason))
                 }
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Login network exception: ${e.message}", e)
             Result.failure(Exception("Portal unreachable (${e.localizedMessage ?: "network error"})", e))
         }
     }
@@ -162,6 +180,7 @@ object PortalApi {
      */
     suspend fun logout(username: String): Result<String> = withContext(Dispatchers.IO) {
         try {
+            Log.i(TAG, "Attempting portal logout for user: $username")
             val formBody = FormBody.Builder()
                 .add("mode", "193")
                 .add("username", username)
@@ -176,24 +195,31 @@ object PortalApi {
 
             getClient(8000).newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: ""
+                Log.d(TAG, "Logout raw response: $body")
                 val parsed = parseXml(body)
-                val message = parsed["message"]?.trim() ?: "Signed out successfully"
+                val message = parsed["message"]?.trim()
+                    ?: parsed["logoutmessage"]?.trim()
+                    ?: "Signed out successfully"
+                Log.i(TAG, "Logout success: $message")
                 Result.success(message)
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Logout network exception: ${e.message}", e)
             Result.failure(Exception("Portal unreachable (${e.localizedMessage ?: "network error"})", e))
         }
     }
 
     /**
-     * Lightweight XML parser using XmlPullParser.
+     * Lightweight XML parser using XmlPullParser with robust CDATA and multiline support.
      */
     fun parseXml(xmlContent: String): Map<String, String> {
         val result = mutableMapOf<String, String>()
         if (xmlContent.isBlank()) return result
 
         try {
-            val parser = Xml.newPullParser()
+            val factory = XmlPullParserFactory.newInstance()
+            factory.isNamespaceAware = false
+            val parser = factory.newPullParser()
             parser.setInput(StringReader(xmlContent))
             var eventType = parser.eventType
             var currentTag = ""
@@ -203,12 +229,10 @@ object PortalApi {
                     XmlPullParser.START_TAG -> {
                         currentTag = parser.name.lowercase()
                     }
-                    XmlPullParser.TEXT -> {
+                    XmlPullParser.TEXT, XmlPullParser.CDSECT -> {
                         if (currentTag.isNotEmpty()) {
-                            val text = parser.text.trim()
-                            if (text.isNotEmpty()) {
-                                result[currentTag] = text
-                            }
+                            val text = parser.text ?: ""
+                            result[currentTag] = (result[currentTag] ?: "") + text
                         }
                     }
                     XmlPullParser.END_TAG -> {
@@ -218,16 +242,30 @@ object PortalApi {
                 eventType = parser.next()
             }
         } catch (e: Exception) {
-            // Fallback simple regex extraction if XML is malformed
+            // Fallback regex extraction if XML is malformed or parser fails
             val tags = listOf("status", "message", "ack", "logoutmessage", "state")
             for (tag in tags) {
-                val regex = "<$tag>([^<]*)</$tag>".toRegex(RegexOption.IGNORE_CASE)
+                val regex = "<$tag>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?</$tag>".toRegex(RegexOption.IGNORE_CASE)
                 val match = regex.find(xmlContent)
                 if (match != null) {
                     result[tag] = match.groupValues[1].trim()
                 }
             }
         }
-        return result
+
+        return result.mapValues { (_, value) ->
+            cleanMessage(value)
+        }
+    }
+
+    fun cleanMessage(raw: String): String {
+        return raw.replace("<![CDATA[", "")
+            .replace("]]>", "")
+            .replace("&#39;", "'")
+            .replace("&quot;", "\"")
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .trim()
     }
 }

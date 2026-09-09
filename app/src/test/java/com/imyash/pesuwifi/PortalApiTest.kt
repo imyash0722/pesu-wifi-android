@@ -37,4 +37,28 @@ class PortalApiTest {
         assertEquals("LOGIN", parsed["status"])
         assertEquals("You've signed out", parsed["message"])
     }
+
+    @Test
+    fun testParseXmlWithCdata() {
+        val xml = "<requestresponse><status>LOGIN</status><message><![CDATA[The system could not log you on. Make sure your password is correct]]></message></requestresponse>"
+        val parsed = PortalApi.parseXml(xml)
+        assertEquals("LOGIN", parsed["status"])
+        assertEquals("The system could not log you on. Make sure your password is correct", parsed["message"])
+    }
+
+    @Test
+    fun testParseXmlDataLimitExceededCdata() {
+        val xml = "<requestresponse><status>LOGIN</status><message><![CDATA[Your data limit has exceeded]]></message></requestresponse>"
+        val parsed = PortalApi.parseXml(xml)
+        assertEquals("LOGIN", parsed["status"])
+        assertEquals("Your data limit has exceeded", parsed["message"])
+    }
+
+    @Test
+    fun testParseXmlMaxLoginLimitCdata() {
+        val xml = "<requestresponse><status>LOGIN</status><message><![CDATA[Maximum Login Limit Reached]]></message></requestresponse>"
+        val parsed = PortalApi.parseXml(xml)
+        assertEquals("LOGIN", parsed["status"])
+        assertEquals("Maximum Login Limit Reached", parsed["message"])
+    }
 }

@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.2.1 — Portal Login Detection & Network Connectivity Fix](#v121--portal-login-detection--network-connectivity-fix)
+  - [Overview & Major Highlights](#v121-overview--major-highlights)
 - [v1.2.0 — First-Launch Onboarding & Automated CI/CD Release](#v120--first-launch-onboarding--automated-cicd-release)
   - [Overview & Major Highlights](#v120-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v120-commit-by-commit-technical-breakdown)
@@ -15,6 +17,20 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.2.1 — Portal Login Detection & Network Connectivity Fix
+
+**Release Date:** September 9, 2026  
+**Git Tag:** [`v1.2.1`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.2.1)  
+**APK Asset:** `pesu-wifi-v1.2.1.apk` (11.39 MiB, signed via APK Signature Scheme v2)  
+
+### v1.2.1 Overview & Major Highlights
+- **🔒 Fixed Catastrophic Login False-Positive:** Resolved a critical bug where failed logins (`status == "LOGIN"`, invalid credentials, data limit reached, or concurrent session limits) were incorrectly evaluated as successful logins due to non-empty status checks. Aligned logic with the reference Python CLI to strictly require `status == "LIVE"` or messages containing "signed in".
+- **📜 Robust CDATA & Multiline XML Parsing:** Upgraded XML parsing to use `XmlPullParserFactory` with native `XmlPullParser.CDSECT` support, preventing CDATA chunks from being truncated or lost. Added entity unescaping for HTML codes such as `&#39;`.
+- **🌐 Resilient Gateway & Cleartext Configuration:** Updated `isPortalOnline()` to check `/httpclient.html` across HTTP status codes `200..499`, preventing false "Portal gateway unreachable" reports when proxies intercept HTTP requests. Enabled base cleartext traffic across all campus subnets.
+- **🎨 UI Polish & Deprecation Cleanup:** Migrated all Login/Logout icons to `Icons.AutoMirrored` and increased bottom scroll padding to prevent layout clipping on various screen sizes.
 
 ---
 
