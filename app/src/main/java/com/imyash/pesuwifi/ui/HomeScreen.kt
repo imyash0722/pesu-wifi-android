@@ -52,6 +52,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.imyash.pesuwifi.ui.components.AccountDialog
+import com.imyash.pesuwifi.ui.components.PermissionsCard
+import com.imyash.pesuwifi.ui.components.PermissionsRequiredDialog
 import com.imyash.pesuwifi.ui.components.StatusCard
 import com.imyash.pesuwifi.ui.theme.StatusAmber
 import com.imyash.pesuwifi.ui.theme.StatusGreen
@@ -62,11 +64,15 @@ import com.imyash.pesuwifi.viewmodel.PortalViewModel
 fun HomeScreen(
     viewModel: PortalViewModel,
     onNavigateToAccounts: () -> Unit,
-    onRequestIgnoreBatteryOptimizations: () -> Unit = {}
+    onRequestNotification: () -> Unit = {},
+    onRequestBatteryOptimization: () -> Unit = {},
+    onRequestExactAlarm: () -> Unit = {},
+    onRequestMiuiAutostart: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showAddAccountDialog by remember { mutableStateOf(false) }
+    var showPermissionsDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.userMessage) {
         state.userMessage?.let {
@@ -279,62 +285,44 @@ fun HomeScreen(
 
                     Switch(
                         checked = state.isDaemonRunning,
-                        onCheckedChange = { viewModel.toggleDaemon() }
+                        onCheckedChange = {
+                            if (!state.isDaemonRunning && !state.permissionState.allEssentialGranted) {
+                                showPermissionsDialog = true
+                            } else {
+                                viewModel.toggleDaemon()
+                            }
+                        }
                     )
                 }
             }
 
-            // Battery Optimization Alert Card
-            if (state.isBatteryOptimized) {
+            // Permissions Card (shows when any background permission needs setup)
+            if (!state.permissionState.allEssentialGranted || state.permissionState.isMiui) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.BatteryAlert,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = "Battery Optimization Active",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "MIUI may pause background keepalive when your phone screen turns off. Allow PesuWifi to run unrestricted for reliable 24/7 keepalive.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(
-                            onClick = onRequestIgnoreBatteryOptimizations,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.error
-                            ),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Disable Optimization", color = Color.White)
-                        }
-                    }
-                }
+                PermissionsCard(
+                    permissionState = state.permissionState,
+                    onRequestNotification = onRequestNotification,
+                    onRequestBatteryOptimization = onRequestBatteryOptimization,
+                    onRequestExactAlarm = onRequestExactAlarm,
+                    onRequestMiuiAutostart = onRequestMiuiAutostart
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        if (showPermissionsDialog) {
+            PermissionsRequiredDialog(
+                permissionState = state.permissionState,
+                onRequestNotification = onRequestNotification,
+                onRequestBatteryOptimization = onRequestBatteryOptimization,
+                onRequestExactAlarm = onRequestExactAlarm,
+                onStartAnyway = {
+                    showPermissionsDialog = false
+                    viewModel.toggleDaemon()
+                },
+                onDismiss = { showPermissionsDialog = false }
+            )
         }
 
         if (showAddAccountDialog) {

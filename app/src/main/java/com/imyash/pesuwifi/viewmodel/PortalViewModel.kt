@@ -10,6 +10,8 @@ import com.imyash.pesuwifi.data.AccountRepository
 import com.imyash.pesuwifi.data.PortalRepository
 import com.imyash.pesuwifi.data.PortalStatus
 import com.imyash.pesuwifi.service.WifiKeepaliveService
+import com.imyash.pesuwifi.util.PermissionManager
+import com.imyash.pesuwifi.util.PermissionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +24,7 @@ data class UiState(
     val accounts: Map<String, String> = emptyMap(),
     val activeUser: String? = null,
     val isDaemonRunning: Boolean = false,
-    val isBatteryOptimized: Boolean = false,
+    val permissionState: PermissionState = PermissionState(),
     val isLoading: Boolean = false,
     val userMessage: String? = null,
     val errorMessage: String? = null
@@ -34,7 +36,7 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
     private val accountRepository = AccountRepository.getInstance(application)
 
     private val _isLoading = MutableStateFlow(false)
-    private val _isBatteryOptimized = MutableStateFlow(false)
+    private val _permissionState = MutableStateFlow(PermissionManager.getPermissionState(application))
     private val _userMessage = MutableStateFlow<String?>(null)
     private val _errorMessage = MutableStateFlow<String?>(null)
 
@@ -43,7 +45,7 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
         accountRepository.accountsFlow,
         accountRepository.activeUserFlow,
         WifiKeepaliveService.isServiceRunning,
-        _isBatteryOptimized,
+        _permissionState,
         _isLoading,
         _userMessage,
         _errorMessage
@@ -54,7 +56,7 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
             accounts = args[1] as Map<String, String>,
             activeUser = args[2] as? String,
             isDaemonRunning = args[3] as Boolean,
-            isBatteryOptimized = args[4] as Boolean,
+            permissionState = args[4] as PermissionState,
             isLoading = args[5] as Boolean,
             userMessage = args[6] as? String,
             errorMessage = args[7] as? String
@@ -66,18 +68,17 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
     )
 
     init {
-        checkBatteryOptimization()
+        refreshPermissions()
         refresh()
     }
 
-    fun checkBatteryOptimization() {
+    fun refreshPermissions() {
         val context = getApplication<Application>().applicationContext
-        val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
-        if (pm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            _isBatteryOptimized.value = !pm.isIgnoringBatteryOptimizations(context.packageName)
-        } else {
-            _isBatteryOptimized.value = false
-        }
+        _permissionState.value = PermissionManager.getPermissionState(context)
+    }
+
+    fun checkBatteryOptimization() {
+        refreshPermissions()
     }
 
     fun refresh() {

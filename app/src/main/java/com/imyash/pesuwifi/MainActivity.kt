@@ -27,6 +27,7 @@ import androidx.core.content.ContextCompat
 import com.imyash.pesuwifi.ui.AccountsScreen
 import com.imyash.pesuwifi.ui.HomeScreen
 import com.imyash.pesuwifi.ui.theme.PesuWifiTheme
+import com.imyash.pesuwifi.util.PermissionManager
 import com.imyash.pesuwifi.viewmodel.PortalViewModel
 
 enum class Screen {
@@ -40,7 +41,7 @@ class MainActivity : ComponentActivity() {
 
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            // If granted, foreground keepalive notification will show cleanly
+            viewModel.refreshPermissions()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,7 +66,10 @@ class MainActivity : ComponentActivity() {
                             Screen.HOME -> HomeScreen(
                                 viewModel = viewModel,
                                 onNavigateToAccounts = { currentScreen = Screen.ACCOUNTS },
-                                onRequestIgnoreBatteryOptimizations = { requestIgnoreBatteryOptimizations() }
+                                onRequestNotification = { requestNotificationPermission() },
+                                onRequestBatteryOptimization = { requestBatteryOptimization() },
+                                onRequestExactAlarm = { requestExactAlarm() },
+                                onRequestMiuiAutostart = { requestMiuiAutostart() }
                             )
                             Screen.ACCOUNTS -> AccountsScreen(
                                 viewModel = viewModel,
@@ -80,21 +84,49 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        viewModel.checkBatteryOptimization()
+        viewModel.refreshPermissions()
     }
 
-    private fun requestIgnoreBatteryOptimizations() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    fun requestBatteryOptimization() {
+        try {
+            startActivity(PermissionManager.getBatteryOptimizationIntent(packageName))
+        } catch (e: Exception) {
             try {
-                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                    data = Uri.parse("package:$packageName")
-                }
-                startActivity(intent)
-            } catch (e: Exception) {
-                try {
-                    startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                } catch (_: Exception) {}
+                startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            } catch (_: Exception) {
+                startActivity(PermissionManager.getAppSettingsIntent(packageName))
             }
+        }
+    }
+
+    fun requestExactAlarm() {
+        try {
+            startActivity(PermissionManager.getExactAlarmIntent(packageName))
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_SETTINGS))
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun requestMiuiAutostart() {
+        try {
+            val intent = PermissionManager.getMiuiAutostartIntent()
+            if (intent != null) {
+                startActivity(intent)
+            } else {
+                startActivity(PermissionManager.getAppSettingsIntent(packageName))
+            }
+        } catch (e: Exception) {
+            try {
+                startActivity(PermissionManager.getAppSettingsIntent(packageName))
+            } catch (_: Exception) {}
         }
     }
 
