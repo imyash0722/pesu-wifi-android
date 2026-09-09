@@ -67,7 +67,7 @@ fun HomeScreen(
     onRequestNotification: () -> Unit = {},
     onRequestBatteryOptimization: () -> Unit = {},
     onRequestExactAlarm: () -> Unit = {},
-    onRequestMiuiAutostart: () -> Unit = {}
+    onRequestAutostart: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -297,14 +297,14 @@ fun HomeScreen(
             }
 
             // Permissions Card (shows when any background permission needs setup)
-            if (!state.permissionState.allEssentialGranted || state.permissionState.isMiui) {
+            if (!state.permissionState.allEssentialGranted || state.permissionState.hasAutostartSettings) {
                 Spacer(modifier = Modifier.height(16.dp))
                 PermissionsCard(
                     permissionState = state.permissionState,
                     onRequestNotification = onRequestNotification,
                     onRequestBatteryOptimization = onRequestBatteryOptimization,
                     onRequestExactAlarm = onRequestExactAlarm,
-                    onRequestMiuiAutostart = onRequestMiuiAutostart
+                    onRequestAutostart = onRequestAutostart
                 )
             }
 

@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
                                 onRequestNotification = { requestNotificationPermission() },
                                 onRequestBatteryOptimization = { requestBatteryOptimization() },
                                 onRequestExactAlarm = { requestExactAlarm() },
-                                onRequestMiuiAutostart = { requestMiuiAutostart() }
+                                onRequestAutostart = { requestAutostart() }
                             )
                             Screen.ACCOUNTS -> AccountsScreen(
                                 viewModel = viewModel,
@@ -115,9 +115,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun requestMiuiAutostart() {
+    fun requestAutostart() {
         try {
-            val intent = PermissionManager.getMiuiAutostartIntent()
+            val intent = PermissionManager.getAutostartIntent(this)
             if (intent != null) {
                 startActivity(intent)
             } else {

@@ -17,7 +17,7 @@ data class PermissionState(
     val isNotificationGranted: Boolean = true,
     val isBatteryOptimizationIgnored: Boolean = true,
     val canScheduleExactAlarms: Boolean = true,
-    val isMiui: Boolean = false
+    val hasAutostartSettings: Boolean = false
 ) {
     val allEssentialGranted: Boolean
         get() = isNotificationGranted && isBatteryOptimizationIgnored && canScheduleExactAlarms
@@ -39,7 +39,7 @@ object PermissionManager {
             isNotificationGranted = isNotificationPermissionGranted(context),
             isBatteryOptimizationIgnored = isBatteryOptimizationIgnored(context),
             canScheduleExactAlarms = canScheduleExactAlarms(context),
-            isMiui = isMiuiDevice()
+            hasAutostartSettings = hasAutostartSettings(context)
         )
     }
 
@@ -72,15 +72,6 @@ object PermissionManager {
         }
     }
 
-    fun isMiuiDevice(): Boolean {
-        val manufacturer = Build.MANUFACTURER.lowercase()
-        val brand = Build.BRAND.lowercase()
-        return manufacturer.contains("xiaomi") ||
-                brand.contains("xiaomi") ||
-                brand.contains("redmi") ||
-                brand.contains("poco")
-    }
-
     fun getBatteryOptimizationIntent(packageName: String): Intent {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
@@ -101,58 +92,48 @@ object PermissionManager {
         }
     }
 
-    fun getMiuiAutostartIntent(): Intent? {
-        val intents = listOf(
-            Intent().setComponent(
-                ComponentName(
-                    "com.miui.securitycenter",
-                    "com.miui.permcenter.autostart.AutoStartManagementActivity"
-                )
-            ),
-            Intent().setComponent(
-                ComponentName(
-                    "com.miui.securityadd",
-                    "com.miui.permcenter.autostart.AutoStartManagementActivity"
-                )
-            ),
-            Intent().setComponent(
-                ComponentName(
-                    "com.letv.android.letvsafe",
-                    "com.letv.android.letvsafe.AutobootManageActivity"
-                )
-            ),
-            Intent().setComponent(
-                ComponentName(
-                    "com.huawei.systemmanager",
-                    "com.huawei.systemmanager.optimize.process.ProtectActivity"
-                )
-            ),
-            Intent().setComponent(
-                ComponentName(
-                    "com.coloros.safecenter",
-                    "com.coloros.safecenter.permission.startup.StartupAppListActivity"
-                )
-            ),
-            Intent().setComponent(
-                ComponentName(
-                    "com.oppo.safe",
-                    "com.oppo.safe.permission.startup.StartupAppListActivity"
-                )
-            ),
-            Intent().setComponent(
-                ComponentName(
-                    "com.iqoo.secure",
-                    "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"
-                )
-            ),
-            Intent().setComponent(
-                ComponentName(
-                    "com.vivo.permissionmanager",
-                    "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
-                )
-            )
+    fun getAutostartIntent(context: Context): Intent? {
+        val candidates = listOf(
+            // Xiaomi / Redmi / POCO (MIUI / HyperOS)
+            Intent().setComponent(ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity")),
+            Intent().setComponent(ComponentName("com.miui.securityadd", "com.miui.permcenter.autostart.AutoStartManagementActivity")),
+            // Huawei / Honor (EMUI / MagicOS)
+            Intent().setComponent(ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity")),
+            Intent().setComponent(ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity")),
+            // Oppo / Realme (ColorOS)
+            Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity")),
+            Intent().setComponent(ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity")),
+            Intent().setComponent(ComponentName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity")),
+            // Vivo / iQOO (FuntouchOS / OriginOS)
+            Intent().setComponent(ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity")),
+            Intent().setComponent(ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity")),
+            // Samsung (OneUI)
+            Intent().setComponent(ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BatteryActivity")),
+            Intent().setComponent(ComponentName("com.samsung.android.sm", "com.samsung.android.sm.ui.battery.BatteryActivity")),
+            // Transsion (Infinix / Tecno / itel)
+            Intent().setComponent(ComponentName("com.transsion.phonemanager", "com.transsion.phonemanager.settings.AutoRunManageActivity")),
+            // Asus
+            Intent().setComponent(ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.autostart.AutoStartActivity")),
+            // LeEco / Lenovo
+            Intent().setComponent(ComponentName("com.letv.android.letvsafe", "com.letv.android.letvsafe.AutobootManageActivity")),
+            Intent().setComponent(ComponentName("com.lenovo.security", "com.lenovo.security.purebackground.PureBackgroundActivity"))
         )
-        return intents.firstOrNull()
+
+        val pm = context.packageManager
+        for (intent in candidates) {
+            try {
+                if (intent.resolveActivity(pm) != null) {
+                    return intent
+                }
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+        return null
+    }
+
+    fun hasAutostartSettings(context: Context): Boolean {
+        return getAutostartIntent(context) != null
     }
 
     fun getAppSettingsIntent(packageName: String): Intent {

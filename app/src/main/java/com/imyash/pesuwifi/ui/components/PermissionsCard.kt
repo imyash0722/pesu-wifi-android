@@ -46,10 +46,10 @@ fun PermissionsCard(
     onRequestNotification: () -> Unit,
     onRequestBatteryOptimization: () -> Unit,
     onRequestExactAlarm: () -> Unit,
-    onRequestMiuiAutostart: () -> Unit,
+    onRequestAutostart: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (permissionState.allEssentialGranted && !permissionState.isMiui) {
+    if (permissionState.allEssentialGranted && !permissionState.hasAutostartSettings) {
         return
     }
 
@@ -125,16 +125,16 @@ fun PermissionsCard(
                 onActionClick = onRequestExactAlarm
             )
 
-            if (permissionState.isMiui) {
+            if (permissionState.hasAutostartSettings) {
                 Spacer(modifier = Modifier.height(10.dp))
                 PermissionItemRow(
                     icon = Icons.Default.RocketLaunch,
-                    title = "MIUI Autostart",
-                    description = "Allows auto-connect after device restarts",
+                    title = "Autostart on Boot",
+                    description = "Allows auto-connect when device boots up",
                     isGranted = false,
                     isOptional = true,
                     buttonText = "Settings",
-                    onActionClick = onRequestMiuiAutostart
+                    onActionClick = onRequestAutostart
                 )
             }
         }
