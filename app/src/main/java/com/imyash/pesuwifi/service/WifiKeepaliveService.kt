@@ -198,7 +198,7 @@ class WifiKeepaliveService : Service() {
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
                 .build()
 
-            networkCallback = object : ConnectivityManager.NetworkCallback() {
+            val callback = object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
                     // Debounce rapid AP roaming transitions across campus
                     reconnectJob?.cancel()
@@ -230,7 +230,8 @@ class WifiKeepaliveService : Service() {
                 }
             }
 
-            connectivityManager.registerNetworkCallback(request, networkCallback!)
+            networkCallback = callback
+            connectivityManager.registerNetworkCallback(request, callback)
         } catch (e: Exception) {
             // Fallback: timer loop continues regardless
         }
