@@ -2,13 +2,17 @@ package com.imyash.pesuwifi.data
 
 import android.util.Xml
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import okhttp3.ConnectionPool
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.xmlpull.v1.XmlPullParser
 import java.io.StringReader
+import java.net.Proxy
 import java.util.concurrent.TimeUnit
+import javax.net.SocketFactory
 
 object PortalApi {
     private const val PORTAL_BASE = "http://192.168.254.1:8090"
@@ -16,14 +20,27 @@ object PortalApi {
     private const val LOGOUT_URL = "$PORTAL_BASE/logout.xml"
     private const val LIVE_URL = "$PORTAL_BASE/live"
 
-    // OkHttpClient with strict timeouts and Connection: close
-    // to match the Python CLI behavior and avoid Squid proxy hangs
-    private val client: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(2500, TimeUnit.MILLISECONDS)
-        .readTimeout(2500, TimeUnit.MILLISECONDS)
-        .writeTimeout(2500, TimeUnit.MILLISECONDS)
-        .retryOnConnectionFailure(false)
-        .addNetworkInterceptor { chain ->
+    @Volatile
+    private var wifiSocketFactory: SocketFactory? = null
+
+    /**
+     * Binds OkHttp calls to the Wi-Fi network interface's SocketFactory so that
+     * campus portal requests bypass Mobile Data / Cellular routing even when Mobile Data is active.
+     */
+    fun setWifiSocketFactory(factory: SocketFactory?) {
+        wifiSocketFactory = factory
+    }
+
+    // Base client:
+    // - ConnectionPool(0, 1, TimeUnit.NANOSECONDS): Never pool or reuse sockets, matching Python CLI fresh Session.
+    // - Proxy.NO_PROXY: Prevents local RFC-1918 gateway (192.168.254.1) from being routed through system/Squid proxies.
+    // - retryOnConnectionFailure(true): Recovers from transient Wi-Fi packet drops.
+    // - Application interceptor: Injects standard headers cleanly before connection setup.
+    private val baseClient: OkHttpClient = OkHttpClient.Builder()
+        .connectionPool(ConnectionPool(0, 1, TimeUnit.NANOSECONDS))
+        .proxy(Proxy.NO_PROXY)
+        .retryOnConnectionFailure(true)
+        .addInterceptor { chain ->
             val request = chain.request().newBuilder()
                 .header("Connection", "close")
                 .header("User-Agent", "Mozilla/5.0 (Android; Mobile; rv:130.0) Gecko/130.0 Firefox/130.0")
@@ -33,16 +50,22 @@ object PortalApi {
         }
         .build()
 
-    private val loginClient: OkHttpClient = client.newBuilder()
-        .connectTimeout(6000, TimeUnit.MILLISECONDS)
-        .readTimeout(6000, TimeUnit.MILLISECONDS)
-        .writeTimeout(6000, TimeUnit.MILLISECONDS)
-        .build()
+    private fun getClient(timeoutMs: Long): OkHttpClient {
+        val builder = baseClient.newBuilder()
+            .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+            .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
+
+        wifiSocketFactory?.let { factory ->
+            builder.socketFactory(factory)
+        }
+        return builder.build()
+    }
 
     private fun getTimestamp(): Long = System.currentTimeMillis()
 
     /**
-     * Fast gateway check (20-50ms) to determine if portal is reachable.
+     * Fast gateway check to determine if portal is reachable.
      */
     suspend fun isPortalOnline(): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -50,7 +73,7 @@ object PortalApi {
                 .url(PORTAL_BASE)
                 .get()
                 .build()
-            client.newCall(request).execute().use { response ->
+            getClient(4000).newCall(request).execute().use { response ->
                 response.isSuccessful
             }
         } catch (e: Exception) {
@@ -62,25 +85,34 @@ object PortalApi {
      * Checks if current session is alive.
      * Portal responds with <ack>ack</ack> in ~10-15ms when live,
      * or drops/hangs the connection when logged out.
+     * Includes a quick jitter retry to avoid false session drops on congested Wi-Fi.
      */
-    suspend fun checkLive(username: String): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val url = "$LIVE_URL?mode=192&username=$username&a=${getTimestamp()}&producttype=0"
-            val request = Request.Builder()
-                .url(url)
-                .get()
-                .build()
-            client.newCall(request).execute().use { response ->
-                val body = response.body?.string() ?: return@use false
-                val parsed = parseXml(body)
-                val ack = parsed["ack"]?.trim()?.lowercase() ?: ""
-                val status = parsed["status"]?.trim()?.lowercase() ?: ""
-                ack == "ack" || status.contains("live") || status.contains("ok")
+    suspend fun checkLive(username: String, retryOnFail: Boolean = true): Boolean = withContext(Dispatchers.IO) {
+        suspend fun attempt(): Boolean {
+            return try {
+                val url = "$LIVE_URL?mode=192&username=$username&a=${getTimestamp()}&producttype=0"
+                val request = Request.Builder()
+                    .url(url)
+                    .get()
+                    .build()
+                getClient(4500).newCall(request).execute().use { response ->
+                    val body = response.body?.string() ?: return@use false
+                    val parsed = parseXml(body)
+                    val ack = parsed["ack"]?.trim()?.lowercase() ?: ""
+                    val status = parsed["status"]?.trim()?.lowercase() ?: ""
+                    ack == "ack" || status.contains("live") || status.contains("ok")
+                }
+            } catch (e: Exception) {
+                false
             }
-        } catch (e: Exception) {
-            // Portal drops TCP connection on timeout when logged out - this is expected
-            false
         }
+
+        val first = attempt()
+        if (first || !retryOnFail) return@withContext first
+
+        // Wi-Fi jitter retry: wait 500ms and try once more before reporting session dropped
+        delay(500L)
+        attempt()
     }
 
     /**
@@ -102,7 +134,7 @@ object PortalApi {
                 .post(formBody)
                 .build()
 
-            loginClient.newCall(request).execute().use { response ->
+            getClient(8000).newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: ""
                 val parsed = parseXml(body)
                 val status = (parsed["status"] ?: "").trim().uppercase()
@@ -142,7 +174,7 @@ object PortalApi {
                 .post(formBody)
                 .build()
 
-            loginClient.newCall(request).execute().use { response ->
+            getClient(8000).newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: ""
                 val parsed = parseXml(body)
                 val message = parsed["message"]?.trim() ?: "Signed out successfully"

@@ -10,8 +10,10 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.imyash.pesuwifi.MainActivity
 import com.imyash.pesuwifi.PesuWifiApp
@@ -35,11 +37,16 @@ class WifiKeepaliveService : Service() {
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
     private var loopJob: Job? = null
+    private var reconnectJob: Job? = null
 
     private lateinit var portalRepository: PortalRepository
     private lateinit var accountRepository: AccountRepository
     private lateinit var connectivityManager: ConnectivityManager
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+
+    private var wakeLock: PowerManager.WakeLock? = null
+    private var wifiLock: WifiManager.WifiLock? = null
+    private var consecutiveFailureCount = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -47,8 +54,56 @@ class WifiKeepaliveService : Service() {
         accountRepository = AccountRepository.getInstance(this)
         connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
+        acquireLocks()
         registerNetworkMonitor()
         _isServiceRunning.value = true
+    }
+
+    private fun acquireLocks() {
+        try {
+            val pm = getSystemService(Context.POWER_SERVICE) as? PowerManager
+            if (wakeLock == null && pm != null) {
+                wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "PesuWifi:KeepaliveWakeLock").apply {
+                    setReferenceCounted(false)
+                    acquire(12 * 60 * 60 * 1000L) // 12-hour max safety timeout
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore power manager exceptions
+        }
+
+        try {
+            val wm = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            if (wifiLock == null && wm != null) {
+                val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    WifiManager.WIFI_MODE_FULL_LOW_LATENCY
+                } else {
+                    @Suppress("DEPRECATION")
+                    WifiManager.WIFI_MODE_FULL_HIGH_PERF
+                }
+                wifiLock = wm.createWifiLock(mode, "PesuWifi:KeepaliveWifiLock").apply {
+                    setReferenceCounted(false)
+                    acquire()
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore Wi-Fi manager exceptions
+        }
+    }
+
+    private fun releaseLocks() {
+        try {
+            wakeLock?.let { if (it.isHeld) it.release() }
+            wakeLock = null
+        } catch (e: Exception) {
+            // Ignore
+        }
+        try {
+            wifiLock?.let { if (it.isHeld) it.release() }
+            wifiLock = null
+        } catch (e: Exception) {
+            // Ignore
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -106,13 +161,26 @@ class WifiKeepaliveService : Service() {
                     val status = portalRepository.refreshStatus()
                     updateForegroundNotification()
 
-                    if (status.isWifiConnected && status.isPortalOnline && !status.isLoggedIn) {
-                        // Portal is online but session dropped -> Auto Re-Login
-                        val activeUser = accountRepository.getActiveUser()
-                        if (activeUser != null) {
-                            portalRepository.login(activeUser)
-                            updateForegroundNotification()
+                    if (status.isWifiConnected && status.isPortalOnline) {
+                        if (status.isLoggedIn) {
+                            consecutiveFailureCount = 0
+                        } else {
+                            consecutiveFailureCount++
+                            // Require 2 consecutive failed checks before auto-re-login
+                            // to avoid tearing down active sessions due to transient Wi-Fi packet drops
+                            if (consecutiveFailureCount >= 2) {
+                                val activeUser = accountRepository.getActiveUser()
+                                if (activeUser != null) {
+                                    val result = portalRepository.login(activeUser)
+                                    if (result.isSuccess) {
+                                        consecutiveFailureCount = 0
+                                    }
+                                    updateForegroundNotification()
+                                }
+                            }
                         }
+                    } else {
+                        consecutiveFailureCount = 0
                     }
                 } catch (e: Exception) {
                     // Ignore background network blips
@@ -132,16 +200,29 @@ class WifiKeepaliveService : Service() {
 
             networkCallback = object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
-                    // Wi-Fi connected! Wake up loop immediately to verify & login
-                    serviceScope.launch {
-                        delay(1000L) // Wait for DHCP assignment
-                        portalRepository.refreshStatus()
+                    // Debounce rapid AP roaming transitions across campus
+                    reconnectJob?.cancel()
+                    reconnectJob = serviceScope.launch {
+                        delay(1500L) // Wait for DHCP assignment and Wi-Fi interface stabilization
+                        val status = portalRepository.refreshStatus()
                         updateForegroundNotification()
+
+                        if (status.isWifiConnected && status.isPortalOnline && !status.isLoggedIn) {
+                            // On fresh network connection, immediately authenticate
+                            val activeUser = accountRepository.getActiveUser()
+                            if (activeUser != null) {
+                                portalRepository.login(activeUser)
+                                consecutiveFailureCount = 0
+                                updateForegroundNotification()
+                            }
+                        }
                         startKeepaliveLoop()
                     }
                 }
 
                 override fun onLost(network: Network) {
+                    reconnectJob?.cancel()
+                    consecutiveFailureCount = 0
                     serviceScope.launch {
                         portalRepository.refreshStatus()
                         updateForegroundNotification()
@@ -149,7 +230,7 @@ class WifiKeepaliveService : Service() {
                 }
             }
 
-            connectivityManager.registerNetworkCallback(request, networkCallback!!)
+            connectivityManager.registerNetworkCallback(request, networkCallback!)
         } catch (e: Exception) {
             // Fallback: timer loop continues regardless
         }
@@ -226,6 +307,9 @@ class WifiKeepaliveService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         _isServiceRunning.value = false
+        reconnectJob?.cancel()
+        loopJob?.cancel()
+        releaseLocks()
         try {
             networkCallback?.let { connectivityManager.unregisterNetworkCallback(it) }
         } catch (e: Exception) {

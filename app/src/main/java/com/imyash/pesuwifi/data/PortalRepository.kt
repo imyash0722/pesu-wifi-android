@@ -2,6 +2,7 @@ package com.imyash.pesuwifi.data
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,18 +31,29 @@ class PortalRepository(
     private val _statusFlow = MutableStateFlow(PortalStatus())
     val statusFlow: StateFlow<PortalStatus> = _statusFlow.asStateFlow()
 
+    /**
+     * Resolves the active Wi-Fi Network instance across all available network interfaces.
+     * This avoids the cm.activeNetwork pitfall where Mobile Data is default when Wi-Fi is unvalidated.
+     */
+    fun getWifiNetwork(): Network? {
+        val cm = connectivityManager ?: return null
+        return cm.allNetworks.firstOrNull { network ->
+            val caps = cm.getNetworkCapabilities(network) ?: return@firstOrNull false
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        }
+    }
+
     fun isWifiConnected(): Boolean {
-        val cm = connectivityManager ?: return false
-        val activeNetwork = cm.activeNetwork ?: return false
-        val capabilities = cm.getNetworkCapabilities(activeNetwork) ?: return false
-        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        return getWifiNetwork() != null
     }
 
     suspend fun refreshStatus(): PortalStatus = withContext(Dispatchers.IO) {
-        val wifiConnected = isWifiConnected()
+        val wifiNet = getWifiNetwork()
+        api.setWifiSocketFactory(wifiNet?.socketFactory)
+
         val activeUser = accountRepository.getActiveUser()
 
-        if (!wifiConnected) {
+        if (wifiNet == null) {
             val status = PortalStatus(
                 isWifiConnected = false,
                 isPortalOnline = false,
@@ -95,6 +107,9 @@ class PortalRepository(
     }
 
     suspend fun login(targetUsername: String? = null): Result<String> = withContext(Dispatchers.IO) {
+        val wifiNet = getWifiNetwork()
+        api.setWifiSocketFactory(wifiNet?.socketFactory)
+
         val username = targetUsername ?: accountRepository.getActiveUser()
             ?: return@withContext Result.failure(Exception("No account configured. Add an account first."))
         val password = accountRepository.getPassword(username)
@@ -103,12 +118,24 @@ class PortalRepository(
         val result = api.login(username, password)
         if (result.isSuccess) {
             accountRepository.setActiveUser(username)
+            // Report connectivity to Android OS so it immediately validates the Wi-Fi connection
+            // and clears "No Internet / Sign in to network" notifications
+            wifiNet?.let { net ->
+                try {
+                    connectivityManager?.reportNetworkConnectivity(net, true)
+                } catch (e: Exception) {
+                    // Ignore security or OEM restrictions
+                }
+            }
             refreshStatus()
         }
         result
     }
 
     suspend fun logout(): Result<String> = withContext(Dispatchers.IO) {
+        val wifiNet = getWifiNetwork()
+        api.setWifiSocketFactory(wifiNet?.socketFactory)
+
         val username = accountRepository.getActiveUser() ?: "user"
         val result = api.logout(username)
         refreshStatus()
