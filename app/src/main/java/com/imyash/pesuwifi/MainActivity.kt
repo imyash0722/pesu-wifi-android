@@ -17,10 +17,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.viewModels
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.imyash.pesuwifi.ui.AccountsScreen
 import com.imyash.pesuwifi.ui.HomeScreen
 import com.imyash.pesuwifi.ui.theme.PesuWifiTheme
@@ -32,6 +35,8 @@ enum class Screen {
 }
 
 class MainActivity : ComponentActivity() {
+
+    private val viewModel: PortalViewModel by viewModels()
 
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -49,7 +54,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val viewModel: PortalViewModel = viewModel()
                     var currentScreen by rememberSaveable { mutableStateOf(Screen.HOME) }
 
                     AnimatedContent(
@@ -60,7 +64,8 @@ class MainActivity : ComponentActivity() {
                         when (screen) {
                             Screen.HOME -> HomeScreen(
                                 viewModel = viewModel,
-                                onNavigateToAccounts = { currentScreen = Screen.ACCOUNTS }
+                                onNavigateToAccounts = { currentScreen = Screen.ACCOUNTS },
+                                onRequestIgnoreBatteryOptimizations = { requestIgnoreBatteryOptimizations() }
                             )
                             Screen.ACCOUNTS -> AccountsScreen(
                                 viewModel = viewModel,
@@ -69,6 +74,26 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.checkBatteryOptimization()
+    }
+
+    private fun requestIgnoreBatteryOptimizations() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:$packageName")
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                try {
+                    startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                } catch (_: Exception) {}
             }
         }
     }

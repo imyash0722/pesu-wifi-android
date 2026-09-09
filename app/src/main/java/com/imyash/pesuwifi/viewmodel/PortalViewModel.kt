@@ -1,6 +1,9 @@
 package com.imyash.pesuwifi.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.os.Build
+import android.os.PowerManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imyash.pesuwifi.data.AccountRepository
@@ -19,6 +22,7 @@ data class UiState(
     val accounts: Map<String, String> = emptyMap(),
     val activeUser: String? = null,
     val isDaemonRunning: Boolean = false,
+    val isBatteryOptimized: Boolean = false,
     val isLoading: Boolean = false,
     val userMessage: String? = null,
     val errorMessage: String? = null
@@ -30,6 +34,7 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
     private val accountRepository = AccountRepository.getInstance(application)
 
     private val _isLoading = MutableStateFlow(false)
+    private val _isBatteryOptimized = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
     private val _errorMessage = MutableStateFlow<String?>(null)
 
@@ -38,6 +43,7 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
         accountRepository.accountsFlow,
         accountRepository.activeUserFlow,
         WifiKeepaliveService.isServiceRunning,
+        _isBatteryOptimized,
         _isLoading,
         _userMessage,
         _errorMessage
@@ -48,9 +54,10 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
             accounts = args[1] as Map<String, String>,
             activeUser = args[2] as? String,
             isDaemonRunning = args[3] as Boolean,
-            isLoading = args[4] as Boolean,
-            userMessage = args[5] as? String,
-            errorMessage = args[6] as? String
+            isBatteryOptimized = args[4] as Boolean,
+            isLoading = args[5] as Boolean,
+            userMessage = args[6] as? String,
+            errorMessage = args[7] as? String
         )
     }.stateIn(
         scope = viewModelScope,
@@ -59,7 +66,18 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
     )
 
     init {
+        checkBatteryOptimization()
         refresh()
+    }
+
+    fun checkBatteryOptimization() {
+        val context = getApplication<Application>().applicationContext
+        val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        if (pm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            _isBatteryOptimized.value = !pm.isIgnoringBatteryOptimizations(context.packageName)
+        } else {
+            _isBatteryOptimized.value = false
+        }
     }
 
     fun refresh() {

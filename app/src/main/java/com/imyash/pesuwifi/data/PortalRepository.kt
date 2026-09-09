@@ -87,6 +87,14 @@ class PortalRepository(
         val targetUser = activeUser ?: "test"
         val loggedIn = api.checkLive(targetUser)
 
+        if (loggedIn) {
+            try {
+                connectivityManager?.reportNetworkConnectivity(wifiNet, true)
+            } catch (e: Exception) {
+                // Ignore security or OEM restrictions
+            }
+        }
+
         val message = if (loggedIn) {
             "Connected as ${activeUser ?: "active session"}"
         } else {
