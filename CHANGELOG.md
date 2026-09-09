@@ -5,6 +5,9 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.2.0 — First-Launch Onboarding & Automated CI/CD Release](#v120--first-launch-onboarding--automated-cicd-release)
+  - [Overview & Major Highlights](#v120-overview--major-highlights)
+  - [Commit-by-Commit Technical Breakdown](#v120-commit-by-commit-technical-breakdown)
 - [v1.1.0 — Universal Android Keepalive & Stability Update](#v110--universal-android-keepalive--stability-update)
   - [Overview & Major Highlights](#v110-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v110-commit-by-commit-technical-breakdown)
@@ -12,6 +15,20 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.2.0 — First-Launch Onboarding & Automated CI/CD Release
+
+**Release Date:** September 9, 2026  
+**Git Tag:** [`v1.2.0`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.2.0)  
+**APK Asset:** `pesu-wifi-v1.2.0.apk` (11.39 MiB, signed via APK Signature Scheme v2)  
+
+### v1.2.0 Overview & Major Highlights
+- **🚀 First-Launch Background Permission Dialog:** Brand new contextual onboarding dialog (`FirstLaunchPermissionsDialog`) that triggers on initial app launch. Proactively requests and explains "Unrestricted Battery" optimization, "Notifications", and "Exact 60s Alarms" so keepalive functions out of the box without manual OS settings navigation.
+- **🛡️ Clean Startup Experience:** Suppressed raw uncontextualized Android 13+ system notification popup in `MainActivity.onCreate` until after the onboarding explanation dialog has been shown.
+- **🔄 Auto-Dismiss & Persistent Tracking:** Automatically saves user onboarding state to SharedPreferences (`pesu_wifi_settings`), seamlessly transitioning to "Done" when all essential permissions are granted.
+- **🤖 Automated GitHub Actions APK Release Pipeline:** Added `.github/workflows/release.yml` for automated building, signing verification, and asset publishing directly to GitHub Releases upon git tag push.
 
 ---
 

@@ -3,7 +3,7 @@
 Native Android companion app for PESU captive portal login, session management, and continuous keepalive. Replicates the core logic of the `pesu-wifi` CLI with a clean Material 3 interface and background Foreground Service.
 
 [![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases)
-[![Download APK](https://img.shields.io/badge/Download-APK%20(v1.1.0)-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.1.0/pesu-wifi-v1.1.0.apk)
+[![Download APK](https://img.shields.io/badge/Download-APK%20(v1.2.0)-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.2.0/pesu-wifi-v1.2.0.apk)
 [![Changelog](https://img.shields.io/badge/Changelog-Release%20Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -12,6 +12,7 @@ Native Android companion app for PESU captive portal login, session management, 
 ## Features
 
 - **Automated Login & Logout**: 1-tap sign-in and sign-out against the Cyberoam gateway (`http://192.168.254.1:8090`).
+- **🚀 First-Launch Background Permission Onboarding**: Interactive first-run dialog requesting unrestricted battery optimization, notifications, and alarms so keepalive works out of the box.
 - **🌐 Universal Multi-Vendor Android Support**: Multi-OEM autostart resolver supporting Xiaomi (HyperOS/MIUI), Samsung (OneUI), Oppo/Realme/OnePlus (ColorOS), Vivo/iQOO, Huawei/Honor, Asus, and Transsion. Hides autostart settings cleanly on pure stock Android (Google Pixel, Motorola).
 - **🔋 Screen-Off Keepalive (Continuous WakeLock & WifiLock)**: Holds non-reference-counted `PARTIAL_WAKE_LOCK` and low-latency `WifiLock` to prevent CPU sleep and Wi-Fi radio sleep when device is locked.
 - **⏰ Exact RTC Watchdog Heartbeat**: Dual-redundant `AlarmManager.setExactAndAllowWhileIdle` ticking every 60s to wake the device even through deep Doze.
