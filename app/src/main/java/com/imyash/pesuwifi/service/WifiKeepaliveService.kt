@@ -16,13 +16,13 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.imyash.pesuwifi.MainActivity
 import com.imyash.pesuwifi.PesuWifiApp
 import com.imyash.pesuwifi.R
 import com.imyash.pesuwifi.data.AccountRepository
 import com.imyash.pesuwifi.data.PortalRepository
+import com.imyash.pesuwifi.util.AppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -54,12 +54,11 @@ class WifiKeepaliveService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.i(TAG, "WifiKeepaliveService onCreate")
+        AppLogger.i(TAG, "WifiKeepaliveService onCreate")
         portalRepository = PortalRepository.getInstance(this)
         accountRepository = AccountRepository.getInstance(this)
         connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-        acquireLocks()
         registerNetworkMonitor()
         _isServiceRunning.value = true
     }
@@ -70,12 +69,12 @@ class WifiKeepaliveService : Service() {
             if (pm != null && (wakeLock == null || !wakeLock!!.isHeld)) {
                 wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "PesuWifi:KeepaliveWakeLock").apply {
                     setReferenceCounted(false)
-                    acquire() // Continuous wakelock held while service runs
+                    acquire()
                 }
-                Log.i(TAG, "Continuous PowerManager WakeLock acquired")
+                AppLogger.d(TAG, "PowerManager WakeLock acquired")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to acquire WakeLock: ${e.message}", e)
+            AppLogger.e(TAG, "Failed to acquire WakeLock: ${e.message}", e)
         }
 
         try {
@@ -89,12 +88,12 @@ class WifiKeepaliveService : Service() {
                 }
                 wifiLock = wm.createWifiLock(mode, "PesuWifi:KeepaliveWifiLock").apply {
                     setReferenceCounted(false)
-                    acquire() // Continuous wifi lock held while service runs
+                    acquire()
                 }
-                Log.i(TAG, "Continuous WifiLock acquired (mode: $mode)")
+                AppLogger.d(TAG, "WifiLock acquired (mode: $mode)")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to acquire WifiLock: ${e.message}", e)
+            AppLogger.e(TAG, "Failed to acquire WifiLock: ${e.message}", e)
         }
     }
 
@@ -103,23 +102,23 @@ class WifiKeepaliveService : Service() {
             wakeLock?.let {
                 if (it.isHeld) {
                     it.release()
-                    Log.i(TAG, "WakeLock released")
+                    AppLogger.d(TAG, "WakeLock released")
                 }
             }
             wakeLock = null
         } catch (e: Exception) {
-            Log.w(TAG, "Error releasing WakeLock: ${e.message}")
+            AppLogger.w(TAG, "Error releasing WakeLock: ${e.message}")
         }
         try {
             wifiLock?.let {
                 if (it.isHeld) {
                     it.release()
-                    Log.i(TAG, "WifiLock released")
+                    AppLogger.d(TAG, "WifiLock released")
                 }
             }
             wifiLock = null
         } catch (e: Exception) {
-            Log.w(TAG, "Error releasing WifiLock: ${e.message}")
+            AppLogger.w(TAG, "Error releasing WifiLock: ${e.message}")
         }
     }
 
@@ -163,9 +162,9 @@ class WifiKeepaliveService : Service() {
                     pendingIntent
                 )
             }
-            Log.d(TAG, "Scheduled next heartbeat alarm in ${KEEPALIVE_INTERVAL_MS / 1000}s")
+            AppLogger.d(TAG, "Scheduled next heartbeat alarm in ${KEEPALIVE_INTERVAL_MS / 1000}s")
         } catch (e: Exception) {
-            Log.w(TAG, "Could not schedule exact heartbeat alarm: ${e.message}")
+            AppLogger.w(TAG, "Could not schedule exact heartbeat alarm: ${e.message}")
         }
     }
 
@@ -184,7 +183,7 @@ class WifiKeepaliveService : Service() {
             if (pendingIntent != null) {
                 alarmManager.cancel(pendingIntent)
                 pendingIntent.cancel()
-                Log.d(TAG, "Heartbeat alarm cancelled")
+                AppLogger.d(TAG, "Heartbeat alarm cancelled")
             }
         } catch (e: Exception) {
             // Ignore
@@ -193,40 +192,36 @@ class WifiKeepaliveService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val action = intent?.action ?: ACTION_START
-        Log.d(TAG, "onStartCommand: action = $action")
+        AppLogger.d(TAG, "onStartCommand: action = $action")
 
         when (action) {
             ACTION_STOP -> {
-                Log.i(TAG, "ACTION_STOP received, stopping service")
+                AppLogger.i(TAG, "ACTION_STOP received, stopping service")
                 stopSelf()
                 return START_NOT_STICKY
             }
             ACTION_LOGIN -> {
                 serviceScope.launch {
                     val res = portalRepository.login()
-                    Log.i(TAG, "ACTION_LOGIN result: $res")
+                    AppLogger.i(TAG, "ACTION_LOGIN result: $res")
                     updateForegroundNotification()
                 }
             }
             ACTION_LOGOUT -> {
                 serviceScope.launch {
                     val res = portalRepository.logout()
-                    Log.i(TAG, "ACTION_LOGOUT result: $res")
+                    AppLogger.i(TAG, "ACTION_LOGOUT result: $res")
                     updateForegroundNotification()
                 }
             }
             ACTION_HEARTBEAT -> {
-                Log.d(TAG, "ACTION_HEARTBEAT received (watchdog tick)")
-                acquireLocks()
-                scheduleNextHeartbeat()
+                AppLogger.d(TAG, "ACTION_HEARTBEAT received (watchdog tick)")
                 serviceScope.launch {
                     performKeepaliveCheck()
                 }
             }
             ACTION_START -> {
                 startInForeground()
-                acquireLocks()
-                scheduleNextHeartbeat()
                 startKeepaliveLoop()
             }
         }
@@ -237,7 +232,7 @@ class WifiKeepaliveService : Service() {
     private fun startInForeground() {
         val notification = buildNotification(
             title = "PESU WiFi Keepalive Active",
-            content = "Monitoring captive portal connection...",
+            content = "Monitoring network status...",
             isLoggedIn = false
         )
 
@@ -255,7 +250,7 @@ class WifiKeepaliveService : Service() {
     private suspend fun performKeepaliveCheck(force: Boolean = false) {
         val now = SystemClock.elapsedRealtime()
         if (!force && now - lastCheckTimestamp < 35_000L) {
-            Log.d(TAG, "Skipping check, last check was ${(now - lastCheckTimestamp) / 1000}s ago")
+            AppLogger.d(TAG, "Skipping check, last check was ${(now - lastCheckTimestamp) / 1000}s ago")
             return
         }
         lastCheckTimestamp = now
@@ -264,53 +259,60 @@ class WifiKeepaliveService : Service() {
             val status = portalRepository.refreshStatus()
             updateForegroundNotification()
 
-            if (status.isWifiConnected && status.isPortalOnline) {
+            if (status.isWifiConnected && status.isPesuWifi) {
+                // Connected to campus Wi-Fi
+                acquireLocks()
+                scheduleNextHeartbeat()
+
                 if (status.isLoggedIn) {
                     consecutiveFailureCount = 0
-                    Log.i(TAG, "Keepalive check OK: Logged in as ${status.activeUsername} (latency ${status.latencyMs}ms)")
+                    AppLogger.d(TAG, "Keepalive check OK: Logged in as ${status.activeUsername} (latency ${status.latencyMs}ms)")
                 } else {
                     consecutiveFailureCount++
-                    Log.w(TAG, "Session inactive (failure count $consecutiveFailureCount/2)")
-                    // Require 2 consecutive failed checks before auto-re-login
-                    // to avoid tearing down active sessions due to transient Wi-Fi packet drops
+                    AppLogger.w(TAG, "Session inactive on PESU Wi-Fi (failure count $consecutiveFailureCount/2)")
                     if (consecutiveFailureCount >= 2) {
                         val activeUser = accountRepository.getActiveUser()
                         if (activeUser != null) {
-                            Log.i(TAG, "Initiating re-authentication for $activeUser...")
+                            AppLogger.i(TAG, "Initiating re-authentication for $activeUser...")
                             val result = portalRepository.login(activeUser)
                             if (result.isSuccess) {
-                                Log.i(TAG, "Re-authentication succeeded for $activeUser")
+                                AppLogger.i(TAG, "Re-authentication succeeded for $activeUser")
                                 consecutiveFailureCount = 0
                             } else {
-                                Log.e(TAG, "Re-authentication failed: ${result.exceptionOrNull()?.message}")
+                                AppLogger.e(TAG, "Re-authentication failed: ${result.exceptionOrNull()?.message}")
                             }
                             updateForegroundNotification()
                         } else {
-                            Log.w(TAG, "No active user configured for auto-re-login")
+                            AppLogger.w(TAG, "No active user configured for auto-re-login")
                         }
                     }
                 }
             } else {
+                // Non-interference mode: either disconnected or connected to non-campus Wi-Fi (Home / Hotspot)
                 consecutiveFailureCount = 0
+                releaseLocks() // Release CPU WakeLock and WifiLock so device can sleep
+                cancelHeartbeat() // Cancel 60s hardware wake alarm
+
                 if (!status.isWifiConnected) {
-                    Log.d(TAG, "Wi-Fi not connected")
+                    AppLogger.d(TAG, "Wi-Fi not connected (non-interference mode, locks released)")
                 } else {
-                    Log.d(TAG, "Portal gateway unreachable (${status.latencyMs}ms)")
+                    AppLogger.i(TAG, "External Wi-Fi detected (gateway probe unreachable). Keepalive paused in non-interference mode.")
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Keepalive network check failed: ${e.message}", e)
+            AppLogger.e(TAG, "Keepalive check failed: ${e.message}", e)
         }
     }
 
     private fun startKeepaliveLoop() {
         loopJob?.cancel()
         loopJob = serviceScope.launch {
-            Log.d(TAG, "Keepalive coroutine loop started")
+            AppLogger.d(TAG, "Keepalive loop started")
             while (isActive) {
                 performKeepaliveCheck()
-                scheduleNextHeartbeat()
-                delay(KEEPALIVE_INTERVAL_MS)
+                val isCampus = portalRepository.statusFlow.value.isPesuWifi
+                val sleepInterval = if (isCampus) KEEPALIVE_INTERVAL_MS else (KEEPALIVE_INTERVAL_MS * 5)
+                delay(sleepInterval)
             }
         }
     }
@@ -323,32 +325,43 @@ class WifiKeepaliveService : Service() {
 
             val callback = object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
-                    Log.d(TAG, "NetworkCallback: Wi-Fi onAvailable ($network)")
-                    // Debounce rapid AP roaming transitions across campus
+                    AppLogger.i(TAG, "NetworkCallback: Wi-Fi onAvailable ($network)")
+                    // Debounce rapid AP transitions
                     reconnectJob?.cancel()
                     reconnectJob = serviceScope.launch {
-                        delay(1500L) // Wait for DHCP assignment and Wi-Fi interface stabilization
+                        delay(1500L) // Allow DHCP and interface binding to settle
                         performKeepaliveCheck(force = true)
 
                         val status = portalRepository.statusFlow.value
-                        if (status.isWifiConnected && status.isPortalOnline && !status.isLoggedIn) {
-                            // On fresh network connection, immediately authenticate
-                            val activeUser = accountRepository.getActiveUser()
-                            if (activeUser != null) {
-                                Log.i(TAG, "Network available: auto-authenticating as $activeUser")
-                                portalRepository.login(activeUser)
-                                consecutiveFailureCount = 0
-                                updateForegroundNotification()
+                        if (status.isWifiConnected && status.isPesuWifi) {
+                            AppLogger.i(TAG, "Campus Wi-Fi confirmed on connection")
+                            if (!status.isLoggedIn) {
+                                val activeUser = accountRepository.getActiveUser()
+                                if (activeUser != null) {
+                                    AppLogger.i(TAG, "Network available: auto-authenticating as $activeUser")
+                                    portalRepository.login(activeUser)
+                                    consecutiveFailureCount = 0
+                                    updateForegroundNotification()
+                                }
                             }
+                            acquireLocks()
+                            scheduleNextHeartbeat()
+                            startKeepaliveLoop()
+                        } else {
+                            AppLogger.i(TAG, "External network confirmed: entering non-interference standby")
+                            releaseLocks()
+                            cancelHeartbeat()
                         }
-                        startKeepaliveLoop()
                     }
                 }
 
                 override fun onLost(network: Network) {
-                    Log.d(TAG, "NetworkCallback: Wi-Fi onLost ($network)")
+                    AppLogger.i(TAG, "NetworkCallback: Wi-Fi onLost ($network)")
                     reconnectJob?.cancel()
+                    loopJob?.cancel()
                     consecutiveFailureCount = 0
+                    releaseLocks()
+                    cancelHeartbeat()
                     serviceScope.launch {
                         portalRepository.refreshStatus()
                         updateForegroundNotification()
@@ -358,9 +371,9 @@ class WifiKeepaliveService : Service() {
 
             networkCallback = callback
             connectivityManager.registerNetworkCallback(request, callback)
-            Log.d(TAG, "Registered NetworkCallback for TRANSPORT_WIFI")
+            AppLogger.d(TAG, "Registered NetworkCallback for TRANSPORT_WIFI")
         } catch (e: Exception) {
-            Log.w(TAG, "Could not register NetworkCallback: ${e.message}")
+            AppLogger.w(TAG, "Could not register NetworkCallback: ${e.message}")
         }
     }
 
@@ -368,16 +381,16 @@ class WifiKeepaliveService : Service() {
         val status = portalRepository.statusFlow.value
         val title = when {
             !status.isWifiConnected -> "PESU WiFi: Disconnected"
-            !status.isPortalOnline -> "PESU WiFi: Portal Unreachable"
+            !status.isPesuWifi -> "PESU WiFi: Paused"
             status.isLoggedIn -> "PESU WiFi: Active"
             else -> "PESU WiFi: Logged Out"
         }
 
         val content = when {
             !status.isWifiConnected -> "Waiting for Wi-Fi connection..."
-            !status.isPortalOnline -> "Gateway probe timed out (${status.latencyMs ?: 0}ms)"
+            !status.isPesuWifi -> "Connected to external Wi-Fi. Auto-resumes on campus."
             status.isLoggedIn -> "Logged in as ${status.activeUsername ?: "active"}"
-            else -> "Session expired. Tap to login."
+            else -> "Session inactive on PESU Wi-Fi. Tap to login."
         }
 
         val notification = buildNotification(title, content, status.isLoggedIn)
@@ -434,7 +447,7 @@ class WifiKeepaliveService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.i(TAG, "WifiKeepaliveService onDestroy")
+        AppLogger.i(TAG, "WifiKeepaliveService onDestroy")
         _isServiceRunning.value = false
         reconnectJob?.cancel()
         loopJob?.cancel()

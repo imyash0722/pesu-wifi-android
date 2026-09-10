@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sync
@@ -67,6 +68,7 @@ import com.imyash.pesuwifi.viewmodel.PortalViewModel
 fun HomeScreen(
     viewModel: PortalViewModel,
     onNavigateToAccounts: () -> Unit,
+    onNavigateToLogs: () -> Unit = {},
     onRequestNotification: () -> Unit = {},
     onRequestBatteryOptimization: () -> Unit = {},
     onRequestExactAlarm: () -> Unit = {},
@@ -131,6 +133,9 @@ fun HomeScreen(
                     IconButton(onClick = onNavigateToAccounts) {
                         Icon(imageVector = Icons.Default.ManageAccounts, contentDescription = "Manage Accounts")
                     }
+                    IconButton(onClick = onNavigateToLogs) {
+                        Icon(imageVector = Icons.Default.Description, contentDescription = "Diagnostics & Logs")
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
@@ -152,7 +157,8 @@ fun HomeScreen(
             // Status Card
             StatusCard(
                 status = state.status,
-                isDaemonRunning = state.isDaemonRunning
+                isDaemonRunning = state.isDaemonRunning,
+                onViewLogs = onNavigateToLogs
             )
 
             Spacer(modifier = Modifier.height(24.dp))

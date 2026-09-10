@@ -26,13 +26,15 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.imyash.pesuwifi.ui.AccountsScreen
 import com.imyash.pesuwifi.ui.HomeScreen
+import com.imyash.pesuwifi.ui.LogsScreen
 import com.imyash.pesuwifi.ui.theme.PesuWifiTheme
 import com.imyash.pesuwifi.util.PermissionManager
 import com.imyash.pesuwifi.viewmodel.PortalViewModel
 
 enum class Screen {
     HOME,
-    ACCOUNTS
+    ACCOUNTS,
+    LOGS
 }
 
 class MainActivity : ComponentActivity() {
@@ -68,6 +70,7 @@ class MainActivity : ComponentActivity() {
                             Screen.HOME -> HomeScreen(
                                 viewModel = viewModel,
                                 onNavigateToAccounts = { currentScreen = Screen.ACCOUNTS },
+                                onNavigateToLogs = { currentScreen = Screen.LOGS },
                                 onRequestNotification = { requestNotificationPermission() },
                                 onRequestBatteryOptimization = { requestBatteryOptimization() },
                                 onRequestExactAlarm = { requestExactAlarm() },
@@ -75,6 +78,9 @@ class MainActivity : ComponentActivity() {
                             )
                             Screen.ACCOUNTS -> AccountsScreen(
                                 viewModel = viewModel,
+                                onNavigateBack = { currentScreen = Screen.HOME }
+                            )
+                            Screen.LOGS -> LogsScreen(
                                 onNavigateBack = { currentScreen = Screen.HOME }
                             )
                         }

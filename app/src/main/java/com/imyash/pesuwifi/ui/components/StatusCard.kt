@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.SignalWifi4Bar
 import androidx.compose.material.icons.filled.SignalWifiBad
 import androidx.compose.material.icons.filled.SignalWifiOff
@@ -25,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -43,11 +45,13 @@ import com.imyash.pesuwifi.ui.theme.StatusRed
 fun StatusCard(
     status: PortalStatus,
     isDaemonRunning: Boolean,
+    onViewLogs: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val statusColor by animateColorAsState(
         targetValue = when {
             !status.isWifiConnected -> Color.Gray
+            !status.isPesuWifi -> StatusAmber
             !status.isPortalOnline -> StatusRed
             status.isLoggedIn -> StatusGreen
             else -> StatusAmber
@@ -57,6 +61,7 @@ fun StatusCard(
 
     val statusTitle = when {
         !status.isWifiConnected -> "Wi-Fi Disconnected"
+        !status.isPesuWifi -> "External Wi-Fi (Paused)"
         !status.isPortalOnline -> "Portal Unreachable"
         status.isLoggedIn -> "Session Active"
         else -> "Session Inactive"
@@ -64,6 +69,7 @@ fun StatusCard(
 
     val statusIcon = when {
         !status.isWifiConnected -> Icons.Default.SignalWifiOff
+        !status.isPesuWifi -> Icons.Default.SignalWifi4Bar
         !status.isPortalOnline -> Icons.Default.SignalWifiBad
         else -> Icons.Default.SignalWifi4Bar
     }
@@ -119,54 +125,75 @@ fun StatusCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Latency Chip
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surface
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Latency Chip
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surface
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Speed,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (status.latencyMs != null) "${status.latencyMs} ms" else "–",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Speed,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (status.latencyMs != null) "${status.latencyMs} ms" else "–",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+
+                    // Daemon Status Chip
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = if (isDaemonRunning) StatusGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isDaemonRunning) StatusGreen else Color.Gray)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isDaemonRunning) "Daemon: On" else "Daemon: Off",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isDaemonRunning) StatusGreen else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
 
-                // Daemon Status Chip
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (isDaemonRunning) StatusGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                if (onViewLogs != null) {
+                    TextButton(
+                        onClick = onViewLogs,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(if (isDaemonRunning) StatusGreen else Color.Gray)
+                        Icon(
+                            imageVector = Icons.Default.Description,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (isDaemonRunning) "Daemon: Running" else "Daemon: Off",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = if (isDaemonRunning) StatusGreen else MaterialTheme.colorScheme.onSurface
-                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Logs", fontSize = 12.sp)
                     }
                 }
             }

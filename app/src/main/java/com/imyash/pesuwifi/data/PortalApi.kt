@@ -1,6 +1,7 @@
 package com.imyash.pesuwifi.data
 
 import android.util.Log
+import com.imyash.pesuwifi.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -59,7 +60,7 @@ object PortalApi {
             .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
 
         wifiSocketFactory?.let { factory ->
-            builder.socketFactory(factory)
+            builder.socketFactory(ResilientSocketFactory(factory))
         }
         return builder.build()
     }
@@ -75,13 +76,18 @@ object PortalApi {
                 .url("$PORTAL_BASE/httpclient.html")
                 .get()
                 .build()
-            getClient(4000).newCall(request).execute().use { response ->
-                val ok = response.code in 200..499
-                Log.d(TAG, "isPortalOnline check code: ${response.code}, ok: $ok")
-                ok
+            val ok = getClient(3500).newCall(request).execute().use { response ->
+                response.code in 200..499
             }
+            Log.d(TAG, "isPortalOnline probe: $ok")
+            AppLogger.d(TAG, "isPortalOnline probe: $ok")
+            ok
         } catch (e: Exception) {
-            Log.w(TAG, "isPortalOnline check failed: ${e.message}")
+            Log.w(TAG, "isPortalOnline probe failed: ${e.message}")
+            AppLogger.d(TAG, "isPortalOnline probe unreachable: ${e.message}")
+            if (e.message?.contains("EPERM", ignoreCase = true) == true) {
+                wifiSocketFactory = null
+            }
             false
         }
     }
@@ -107,10 +113,12 @@ object PortalApi {
                     val status = parsed["status"]?.trim()?.lowercase() ?: ""
                     val live = ack == "ack" || status.contains("live") || status.contains("ok")
                     Log.d(TAG, "checkLive for $username: live=$live (ack='$ack', status='$status')")
+                    AppLogger.d(TAG, "checkLive($username): isLive=$live, ack=$ack, status=$status")
                     live
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "checkLive attempt failed for $username: ${e.message}")
+                AppLogger.d(TAG, "checkLive($username) failed: ${e.message}")
                 false
             }
         }
@@ -128,6 +136,7 @@ object PortalApi {
      * Returns Result.success with display message or Result.failure with error message.
      */
     suspend fun login(username: String, password: String): Result<String> = withContext(Dispatchers.IO) {
+        AppLogger.i(TAG, "Attempting portal login for user: $username")
         try {
             Log.i(TAG, "Attempting portal login for user: $username")
             val formBody = FormBody.Builder()
@@ -150,6 +159,8 @@ object PortalApi {
                 val status = (parsed["status"] ?: "").trim().uppercase()
                 val message = (parsed["message"] ?: "").trim()
 
+                AppLogger.i(TAG, "Login response: status=$status, message='$message'")
+
                 val isLive = status == "LIVE" ||
                     message.contains("signed in", ignoreCase = true) ||
                     message.contains("you are signed in", ignoreCase = true)
@@ -157,6 +168,7 @@ object PortalApi {
                 if (isLive) {
                     val successMsg = if (message.isNotEmpty()) message else "Signed in as $username"
                     Log.i(TAG, "Login success: $successMsg")
+                    AppLogger.i(TAG, "Login success for $username: $successMsg")
                     Result.success(successMsg)
                 } else {
                     val errorReason = when {
@@ -166,12 +178,24 @@ object PortalApi {
                         else -> "Unexpected response from portal"
                     }
                     Log.e(TAG, "Login failed: status='$status', message='$message', errorReason='$errorReason'")
+                    AppLogger.w(TAG, "Login rejected for $username: $errorReason")
                     Result.failure(Exception(errorReason))
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Login network exception: ${e.message}", e)
-            Result.failure(Exception("Portal unreachable (${e.localizedMessage ?: "network error"})", e))
+            AppLogger.e(TAG, "Login failed: ${e.message}", e)
+            if (e.message?.contains("EPERM", ignoreCase = true) == true) {
+                wifiSocketFactory = null
+            }
+            val friendlyMsg = when {
+                e.message?.contains("EPERM", ignoreCase = true) == true ->
+                    "Portal unreachable: VPN or system policy blocked direct socket. Falling back to default network."
+                e.message?.contains("timed out", ignoreCase = true) == true ->
+                    "Portal unreachable: Gateway timed out. Check if you are on PESU Wi-Fi."
+                else -> "Portal unreachable (${e.localizedMessage ?: "network error"})"
+            }
+            Result.failure(Exception(friendlyMsg, e))
         }
     }
 
@@ -179,6 +203,7 @@ object PortalApi {
      * Logs out the user session.
      */
     suspend fun logout(username: String): Result<String> = withContext(Dispatchers.IO) {
+        AppLogger.i(TAG, "Attempting portal logout for user: $username")
         try {
             Log.i(TAG, "Attempting portal logout for user: $username")
             val formBody = FormBody.Builder()
@@ -201,10 +226,12 @@ object PortalApi {
                     ?: parsed["logoutmessage"]?.trim()
                     ?: "Signed out successfully"
                 Log.i(TAG, "Logout success: $message")
+                AppLogger.i(TAG, "Logout success: $message")
                 Result.success(message)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Logout network exception: ${e.message}", e)
+            AppLogger.e(TAG, "Logout failed: ${e.message}", e)
             Result.failure(Exception("Portal unreachable (${e.localizedMessage ?: "network error"})", e))
         }
     }

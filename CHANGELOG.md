@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.3.0 — Resilient Socket Fallbacks, Non-Interference Mode & Diagnostic Logs](#v130--resilient-socket-fallbacks-non-interference-mode--diagnostic-logs)
+  - [Overview & Major Highlights](#v130-overview--major-highlights)
 - [v1.2.1 — Portal Login Detection & Network Connectivity Fix](#v121--portal-login-detection--network-connectivity-fix)
   - [Overview & Major Highlights](#v121-overview--major-highlights)
 - [v1.2.0 — First-Launch Onboarding & Automated CI/CD Release](#v120--first-launch-onboarding--automated-cicd-release)
@@ -17,6 +19,20 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.3.0 — Resilient Socket Fallbacks, Non-Interference Mode & Diagnostic Logs
+
+**Release Date:** September 10, 2026  
+**Git Tag:** [`v1.3.0`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.3.0)  
+**APK Asset:** `pesu-wifi-v1.3.0.apk` (11.39 MiB, signed via APK Signature Scheme v2)  
+
+### v1.3.0 Overview & Major Highlights
+- **🛡️ Resilient Socket Fallback (EPERM Resolution):** Resolved kernel-level socket binding error `Binding socket to network failed: EPERM (Operation not permitted)` that occurs when VPNs, Private DNS, or restricted network interfaces are active. Introduced `ResilientSocketFactory` with transparent fallback to default network sockets, and auto-recovery client retries in `PortalApi`. Added `CHANGE_NETWORK_STATE` permission.
+- **🔋 Non-Interference Standby Mode:** When connected to non-college Wi-Fi (Home, Mobile Hotspot, Office) or when Wi-Fi is disconnected, the daemon automatically releases continuous `WakeLock` and `WifiLock`, suspends 60s hardware RTC wake alarms, and transitions to a peaceful idle state to eliminate battery drain. The foreground notification updates to "PESU WiFi: Paused".
+- **⚡ Seamless Campus Auto-Resume:** When returning to PESU Wi-Fi, `ConnectivityManager.NetworkCallback` detects the campus portal, automatically re-engages keepalive, acquires locks, re-authenticates the active user, and resumes active watchdog monitoring without any manual intervention.
+- **📋 In-App Diagnostic Logs & Export:** Added a full-featured Diagnostic Logs screen (`LogsScreen`) accessible via the TopAppBar and StatusCard. Captures timestamped, color-coded logs across API, repository, and keepalive layers. Includes keyword search, filter chips (All, Errors, Warnings, Info), 1-tap clipboard copying, and native Android system sharing (`Intent.ACTION_SEND`).
 
 ---
 

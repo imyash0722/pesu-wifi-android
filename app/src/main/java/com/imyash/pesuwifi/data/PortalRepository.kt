@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import com.imyash.pesuwifi.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.withContext
 
 data class PortalStatus(
     val isWifiConnected: Boolean = false,
+    val isPesuWifi: Boolean = false,
     val isPortalOnline: Boolean = false,
     val isLoggedIn: Boolean = false,
     val activeUsername: String? = null,
@@ -56,6 +58,7 @@ class PortalRepository(
         if (wifiNet == null) {
             val status = PortalStatus(
                 isWifiConnected = false,
+                isPesuWifi = false,
                 isPortalOnline = false,
                 isLoggedIn = false,
                 activeUsername = activeUser,
@@ -63,6 +66,7 @@ class PortalRepository(
                 statusMessage = "Wi-Fi disconnected"
             )
             _statusFlow.value = status
+            AppLogger.d("PortalRepository", "refreshStatus: Wi-Fi is not connected")
             return@withContext status
         }
 
@@ -71,16 +75,19 @@ class PortalRepository(
         val latency = System.currentTimeMillis() - start
 
         if (!portalUp) {
+            // External Wi-Fi network (Home, Hotspot, Office) where PESU gateway does not exist
             val status = PortalStatus(
                 isWifiConnected = true,
+                isPesuWifi = false,
                 isPortalOnline = false,
                 isLoggedIn = false,
                 activeUsername = activeUser,
                 latencyMs = latency,
                 lastCheckedTimestamp = System.currentTimeMillis(),
-                statusMessage = "Portal gateway unreachable"
+                statusMessage = "External Wi-Fi (Keepalive paused)"
             )
             _statusFlow.value = status
+            AppLogger.i("PortalRepository", "refreshStatus: Connected to non-PESU Wi-Fi (gateway probe timed out)")
             return@withContext status
         }
 
@@ -98,11 +105,12 @@ class PortalRepository(
         val message = if (loggedIn) {
             "Connected as ${activeUser ?: "active session"}"
         } else {
-            "Session inactive (logged out)"
+            "PESU Wi-Fi connected (Logged out)"
         }
 
         val status = PortalStatus(
             isWifiConnected = true,
+            isPesuWifi = true,
             isPortalOnline = true,
             isLoggedIn = loggedIn,
             activeUsername = activeUser,
@@ -111,6 +119,7 @@ class PortalRepository(
             statusMessage = message
         )
         _statusFlow.value = status
+        AppLogger.i("PortalRepository", "refreshStatus: PESU Wi-Fi active (loggedIn=$loggedIn, latency=${latency}ms)")
         status
     }
 
@@ -119,15 +128,20 @@ class PortalRepository(
         api.setWifiSocketFactory(wifiNet?.socketFactory)
 
         val username = targetUsername ?: accountRepository.getActiveUser()
-            ?: return@withContext Result.failure(Exception("No account configured. Add an account first."))
+            ?: run {
+                AppLogger.w("PortalRepository", "Login aborted: No account configured")
+                return@withContext Result.failure<String>(Exception("No account configured. Add an account first."))
+            }
         val password = accountRepository.getPassword(username)
-            ?: return@withContext Result.failure(Exception("No password saved for '$username'"))
+            ?: run {
+                AppLogger.w("PortalRepository", "Login aborted: No password saved for $username")
+                return@withContext Result.failure<String>(Exception("No password saved for '$username'"))
+            }
 
+        AppLogger.i("PortalRepository", "Initiating login for $username")
         val result = api.login(username, password)
         if (result.isSuccess) {
             accountRepository.setActiveUser(username)
-            // Report connectivity to Android OS so it immediately validates the Wi-Fi connection
-            // and clears "No Internet / Sign in to network" notifications
             wifiNet?.let { net ->
                 try {
                     connectivityManager?.reportNetworkConnectivity(net, true)
@@ -145,6 +159,7 @@ class PortalRepository(
         api.setWifiSocketFactory(wifiNet?.socketFactory)
 
         val username = accountRepository.getActiveUser() ?: "user"
+        AppLogger.i("PortalRepository", "Initiating logout for $username")
         val result = api.logout(username)
         refreshStatus()
         result
