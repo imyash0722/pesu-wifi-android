@@ -49,6 +49,51 @@ class PortalRepository(
         return getWifiNetwork() != null
     }
 
+    fun getCurrentWifiSsid(wifiNet: Network? = null): String? {
+        val cm = connectivityManager ?: return null
+        val targetNet = wifiNet ?: getWifiNetwork() ?: return null
+        val caps = cm.getNetworkCapabilities(targetNet)
+        val wifiInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            caps?.transportInfo as? android.net.wifi.WifiInfo
+        } else {
+            @Suppress("DEPRECATION")
+            val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+            wm?.connectionInfo
+        }
+        val ssid = wifiInfo?.ssid?.takeIf { it != "<unknown ssid>" }
+            ?: run {
+                @Suppress("DEPRECATION")
+                val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+                wm?.connectionInfo?.ssid?.takeIf { it != "<unknown ssid>" }
+            }
+        return ssid?.replace("\"", "")?.trim()
+    }
+
+    fun getCurrentWifiBssid(wifiNet: Network? = null): String? {
+        val cm = connectivityManager ?: return null
+        val targetNet = wifiNet ?: getWifiNetwork() ?: return null
+        val caps = cm.getNetworkCapabilities(targetNet)
+        val wifiInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            caps?.transportInfo as? android.net.wifi.WifiInfo
+        } else {
+            @Suppress("DEPRECATION")
+            val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+            wm?.connectionInfo
+        }
+        val bssid = wifiInfo?.bssid?.takeIf { it != "02:00:00:00:00:00" }
+            ?: run {
+                @Suppress("DEPRECATION")
+                val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+                wm?.connectionInfo?.bssid?.takeIf { it != "02:00:00:00:00:00" }
+            }
+        return bssid
+    }
+
+    fun isCampusSsid(ssid: String?): Boolean {
+        if (ssid.isNullOrBlank()) return false
+        return ssid.contains("PESU", ignoreCase = true)
+    }
+
     suspend fun refreshStatus(): PortalStatus = withContext(Dispatchers.IO) {
         val wifiNet = getWifiNetwork()
         api.setWifiSocketFactory(wifiNet?.socketFactory)
@@ -70,35 +115,62 @@ class PortalRepository(
             return@withContext status
         }
 
+        val currentSsid = getCurrentWifiSsid(wifiNet)
+        val isCampusNetwork = isCampusSsid(currentSsid)
+
         val start = System.currentTimeMillis()
         val portalUp = api.isPortalOnline()
         val latency = System.currentTimeMillis() - start
 
         if (!portalUp) {
-            // External Wi-Fi network (Home, Hotspot, Office) where PESU gateway does not exist
-            val status = PortalStatus(
-                isWifiConnected = true,
-                isPesuWifi = false,
-                isPortalOnline = false,
-                isLoggedIn = false,
-                activeUsername = activeUser,
-                latencyMs = latency,
-                lastCheckedTimestamp = System.currentTimeMillis(),
-                statusMessage = "External Wi-Fi (Keepalive paused)"
-            )
-            _statusFlow.value = status
-            AppLogger.i("PortalRepository", "refreshStatus: Connected to non-PESU Wi-Fi (gateway probe timed out)")
-            return@withContext status
+            if (isCampusNetwork) {
+                // Connected to campus AP, but gateway probe failed (e.g. roaming transition or weak signal)
+                val status = PortalStatus(
+                    isWifiConnected = true,
+                    isPesuWifi = true, // Preserve campus classification so keepalive loop does not terminate
+                    isPortalOnline = false,
+                    isLoggedIn = false,
+                    activeUsername = activeUser,
+                    latencyMs = latency,
+                    lastCheckedTimestamp = System.currentTimeMillis(),
+                    statusMessage = "PESU Wi-Fi: Gateway probe unreachable (roaming...)"
+                )
+                _statusFlow.value = status
+                AppLogger.roam("PortalRepository", "refreshStatus: Campus SSID '$currentSsid' active, but gateway probe unreachable. Preserving campus mode (latency ${latency}ms)")
+                return@withContext status
+            } else {
+                // Truly external Wi-Fi (Home, Hotspot, Office) where PESU gateway does not exist
+                val status = PortalStatus(
+                    isWifiConnected = true,
+                    isPesuWifi = false,
+                    isPortalOnline = false,
+                    isLoggedIn = false,
+                    activeUsername = activeUser,
+                    latencyMs = latency,
+                    lastCheckedTimestamp = System.currentTimeMillis(),
+                    statusMessage = "External Wi-Fi (Keepalive paused)"
+                )
+                _statusFlow.value = status
+                AppLogger.i("PortalRepository", "refreshStatus: Connected to external Wi-Fi '$currentSsid' (gateway probe timed out)")
+                return@withContext status
+            }
         }
 
         val targetUser = activeUser ?: "test"
-        val loggedIn = api.checkLive(targetUser)
+        var loggedIn = api.checkLive(targetUser)
 
         if (loggedIn) {
-            try {
-                connectivityManager?.reportNetworkConnectivity(wifiNet, true)
-            } catch (e: Exception) {
-                // Ignore security or OEM restrictions
+            // Verify real internet routing to catch "Zombie Sessions" (Cyberoam says live, but AP intercepts)
+            val internetOk = api.verifyInternetConnectivity()
+            if (!internetOk) {
+                AppLogger.roam("PortalRepository", "ZOMBIE SESSION DETECTED: checkLive reported true, but internet probe (generate_204) failed/intercepted. Invalidating session state to force re-auth.")
+                loggedIn = false
+            } else {
+                try {
+                    connectivityManager?.reportNetworkConnectivity(wifiNet, true)
+                } catch (e: Exception) {
+                    // Ignore security or OEM restrictions
+                }
             }
         }
 

@@ -18,20 +18,32 @@ import javax.net.SocketFactory
 
 object PortalApi {
     private const val TAG = "PesuWifiApi"
-    private const val PORTAL_BASE = "http://192.168.254.1:8090"
-    private const val LOGIN_URL = "$PORTAL_BASE/login.xml"
-    private const val LOGOUT_URL = "$PORTAL_BASE/logout.xml"
-    private const val LIVE_URL = "$PORTAL_BASE/live"
+    const val DEFAULT_PORTAL_BASE = "http://192.168.254.1:8090"
+
+    @Volatile
+    var portalBaseUrl: String = DEFAULT_PORTAL_BASE
+
+    val loginUrl: String get() = "$portalBaseUrl/login.xml"
+    val logoutUrl: String get() = "$portalBaseUrl/logout.xml"
+    val liveUrl: String get() = "$portalBaseUrl/live"
+    val probeUrl: String get() = "$portalBaseUrl/httpclient.html"
 
     @Volatile
     private var wifiSocketFactory: SocketFactory? = null
 
     /**
      * Binds OkHttp calls to the Wi-Fi network interface's SocketFactory so that
-     * campus portal requests bypass Mobile Data / Cellular routing even when Mobile Data is active.
+     * campus portal requests bypass Mobile Data / Cellular routing and Tailscale VPN tunnels.
      */
     fun setWifiSocketFactory(factory: SocketFactory?) {
         wifiSocketFactory = factory
+    }
+
+    /**
+     * Evicts cached sockets to force fresh SYN handshakes upon roaming or gateway IP change.
+     */
+    fun evictConnectionPool() {
+        baseClient.connectionPool.evictAll()
     }
 
     // Base client:
@@ -71,23 +83,21 @@ object PortalApi {
      * Fast gateway check to determine if portal is reachable.
      */
     suspend fun isPortalOnline(): Boolean = withContext(Dispatchers.IO) {
+        val start = System.currentTimeMillis()
         try {
             val request = Request.Builder()
-                .url("$PORTAL_BASE/httpclient.html")
+                .url(probeUrl)
                 .get()
                 .build()
-            val ok = getClient(3500).newCall(request).execute().use { response ->
-                response.code in 200..499
+            val (code, ok) = getClient(3500).newCall(request).execute().use { response ->
+                Pair(response.code, response.code in 200..499)
             }
-            Log.d(TAG, "isPortalOnline probe: $ok")
-            AppLogger.d(TAG, "isPortalOnline probe: $ok")
+            val latency = System.currentTimeMillis() - start
+            AppLogger.portal(TAG, "isPortalOnline probe: reachable=$ok (HTTP $code, latency=${latency}ms, url=$probeUrl)")
             ok
         } catch (e: Exception) {
-            Log.w(TAG, "isPortalOnline probe failed: ${e.message}")
-            AppLogger.d(TAG, "isPortalOnline probe unreachable: ${e.message}")
-            if (e.message?.contains("EPERM", ignoreCase = true) == true) {
-                wifiSocketFactory = null
-            }
+            val latency = System.currentTimeMillis() - start
+            AppLogger.portal(TAG, "isPortalOnline probe unreachable: ${e.message} (latency=${latency}ms, url=$probeUrl)")
             false
         }
     }
@@ -99,36 +109,62 @@ object PortalApi {
      * Includes a quick jitter retry to avoid false session drops on congested Wi-Fi.
      */
     suspend fun checkLive(username: String, retryOnFail: Boolean = true): Boolean = withContext(Dispatchers.IO) {
-        suspend fun attempt(): Boolean {
+        suspend fun attempt(attemptNum: Int): Boolean {
+            val start = System.currentTimeMillis()
             return try {
-                val url = "$LIVE_URL?mode=192&username=$username&a=${getTimestamp()}&producttype=0"
+                val url = "$liveUrl?mode=192&username=$username&a=${getTimestamp()}&producttype=0"
                 val request = Request.Builder()
                     .url(url)
                     .get()
                     .build()
                 getClient(4500).newCall(request).execute().use { response ->
+                    val latency = System.currentTimeMillis() - start
                     val body = response.body?.string() ?: return@use false
                     val parsed = parseXml(body)
                     val ack = parsed["ack"]?.trim()?.lowercase() ?: ""
                     val status = parsed["status"]?.trim()?.lowercase() ?: ""
                     val live = ack == "ack" || status.contains("live") || status.contains("ok")
-                    Log.d(TAG, "checkLive for $username: live=$live (ack='$ack', status='$status')")
-                    AppLogger.d(TAG, "checkLive($username): isLive=$live, ack=$ack, status=$status")
+                    AppLogger.portal(TAG, "checkLive(user=$username, attempt=$attemptNum): isLive=$live, ack='$ack', status='$status' (latency=${latency}ms)")
                     live
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "checkLive attempt failed for $username: ${e.message}")
-                AppLogger.d(TAG, "checkLive($username) failed: ${e.message}")
+                val latency = System.currentTimeMillis() - start
+                AppLogger.w(TAG, "checkLive(user=$username, attempt=$attemptNum) failed: ${e.message} (latency=${latency}ms)")
                 false
             }
         }
 
-        val first = attempt()
+        val first = attempt(1)
         if (first || !retryOnFail) return@withContext first
 
         // Wi-Fi jitter retry: wait 500ms and try once more before reporting session dropped
         delay(500L)
-        attempt()
+        attempt(2)
+    }
+
+    /**
+     * Verifies whether real outbound HTTP traffic routes to the internet without captive interception.
+     * Returns true if HTTP 204 No Content is returned by Google's connectivity check.
+     */
+    suspend fun verifyInternetConnectivity(): Boolean = withContext(Dispatchers.IO) {
+        val start = System.currentTimeMillis()
+        try {
+            val request = Request.Builder()
+                .url("http://connectivitycheck.gstatic.com/generate_204")
+                .get()
+                .build()
+            val code = getClient(3000).newCall(request).execute().use { response ->
+                response.code
+            }
+            val latency = System.currentTimeMillis() - start
+            val ok = code == 204
+            AppLogger.portal(TAG, "verifyInternetConnectivity probe: result=$ok (HTTP $code, latency=${latency}ms)")
+            ok
+        } catch (e: Exception) {
+            val latency = System.currentTimeMillis() - start
+            AppLogger.d(TAG, "verifyInternetConnectivity probe error: ${e.message} (latency=${latency}ms)")
+            false
+        }
     }
 
     /**
@@ -136,9 +172,13 @@ object PortalApi {
      * Returns Result.success with display message or Result.failure with error message.
      */
     suspend fun login(username: String, password: String): Result<String> = withContext(Dispatchers.IO) {
-        AppLogger.i(TAG, "Attempting portal login for user: $username")
-        try {
-            Log.i(TAG, "Attempting portal login for user: $username")
+        loginInternal(username, password, isRetryAfterStaleClear = false)
+    }
+
+    private suspend fun loginInternal(username: String, password: String, isRetryAfterStaleClear: Boolean): Result<String> {
+        val start = System.currentTimeMillis()
+        AppLogger.portal(TAG, ">>> Portal Login Request (staleRetry=$isRetryAfterStaleClear): user=$username, target=$loginUrl")
+        return try {
             val formBody = FormBody.Builder()
                 .add("mode", "191")
                 .add("username", username)
@@ -148,18 +188,18 @@ object PortalApi {
                 .build()
 
             val request = Request.Builder()
-                .url(LOGIN_URL)
+                .url(loginUrl)
                 .post(formBody)
                 .build()
 
             getClient(8000).newCall(request).execute().use { response ->
+                val latency = System.currentTimeMillis() - start
                 val body = response.body?.string() ?: ""
-                Log.d(TAG, "Login raw response: $body")
                 val parsed = parseXml(body)
                 val status = (parsed["status"] ?: "").trim().uppercase()
                 val message = (parsed["message"] ?: "").trim()
 
-                AppLogger.i(TAG, "Login response: status=$status, message='$message'")
+                AppLogger.portal(TAG, "<<< Portal Login Response: status=$status, message='$message' (HTTP ${response.code}, latency=${latency}ms, rawXml='$body')")
 
                 val isLive = status == "LIVE" ||
                     message.contains("signed in", ignoreCase = true) ||
@@ -167,32 +207,36 @@ object PortalApi {
 
                 if (isLive) {
                     val successMsg = if (message.isNotEmpty()) message else "Signed in as $username"
-                    Log.i(TAG, "Login success: $successMsg")
-                    AppLogger.i(TAG, "Login success for $username: $successMsg")
+                    AppLogger.portal(TAG, "Login SUCCESS for $username: $successMsg (latency=${latency}ms)")
                     Result.success(successMsg)
                 } else {
+                    // Check for Cyberoam concurrent login limit / stale session on old AP
+                    if (!isRetryAfterStaleClear && (message.contains("limit", ignoreCase = true) || message.contains("maximum", ignoreCase = true))) {
+                        AppLogger.roam(TAG, "Cyberoam Maximum Login Limit encountered for $username. Auto-evicting stale session on previous AP via logout...")
+                        logout(username)
+                        delay(600L)
+                        AppLogger.roam(TAG, "Retrying portal login for $username following stale session eviction...")
+                        return loginInternal(username, password, isRetryAfterStaleClear = true)
+                    }
+
                     val errorReason = when {
                         message.isNotEmpty() -> message
                         status == "LOGIN" -> "Login failed. Check credentials or concurrent session limit."
                         status.isNotEmpty() -> "Login failed ($status)"
                         else -> "Unexpected response from portal"
                     }
-                    Log.e(TAG, "Login failed: status='$status', message='$message', errorReason='$errorReason'")
-                    AppLogger.w(TAG, "Login rejected for $username: $errorReason")
+                    AppLogger.w(TAG, "Login REJECTED for $username: reason='$errorReason', status='$status', raw='$body'")
                     Result.failure(Exception(errorReason))
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Login network exception: ${e.message}", e)
-            AppLogger.e(TAG, "Login failed: ${e.message}", e)
-            if (e.message?.contains("EPERM", ignoreCase = true) == true) {
-                wifiSocketFactory = null
-            }
+            val latency = System.currentTimeMillis() - start
+            AppLogger.e(TAG, "Login EXCEPTION for $username: ${e.message} (latency=${latency}ms)", e)
             val friendlyMsg = when {
                 e.message?.contains("EPERM", ignoreCase = true) == true ->
-                    "Portal unreachable: VPN or system policy blocked direct socket. Falling back to default network."
+                    "Portal unreachable: VPN or system policy blocked direct socket."
                 e.message?.contains("timed out", ignoreCase = true) == true ->
-                    "Portal unreachable: Gateway timed out. Check if you are on PESU Wi-Fi."
+                    "Portal unreachable: Gateway timed out after ${latency}ms. Check if you are on PESU Wi-Fi."
                 else -> "Portal unreachable (${e.localizedMessage ?: "network error"})"
             }
             Result.failure(Exception(friendlyMsg, e))
@@ -203,9 +247,9 @@ object PortalApi {
      * Logs out the user session.
      */
     suspend fun logout(username: String): Result<String> = withContext(Dispatchers.IO) {
-        AppLogger.i(TAG, "Attempting portal logout for user: $username")
+        val start = System.currentTimeMillis()
+        AppLogger.portal(TAG, ">>> Portal Logout Request: user=$username, target=$logoutUrl")
         try {
-            Log.i(TAG, "Attempting portal logout for user: $username")
             val formBody = FormBody.Builder()
                 .add("mode", "193")
                 .add("username", username)
@@ -214,23 +258,23 @@ object PortalApi {
                 .build()
 
             val request = Request.Builder()
-                .url(LOGOUT_URL)
+                .url(logoutUrl)
                 .post(formBody)
                 .build()
 
             getClient(8000).newCall(request).execute().use { response ->
+                val latency = System.currentTimeMillis() - start
                 val body = response.body?.string() ?: ""
-                Log.d(TAG, "Logout raw response: $body")
                 val parsed = parseXml(body)
                 val message = parsed["message"]?.trim()
                     ?: parsed["logoutmessage"]?.trim()
                     ?: "Signed out successfully"
-                Log.i(TAG, "Logout success: $message")
-                AppLogger.i(TAG, "Logout success: $message")
+                AppLogger.portal(TAG, "<<< Portal Logout Response: message='$message' (HTTP ${response.code}, latency=${latency}ms, raw='$body')")
                 Result.success(message)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Logout network exception: ${e.message}", e)
+            val latency = System.currentTimeMillis() - start
+            AppLogger.e(TAG, "Logout EXCEPTION for $username: ${e.message} (latency=${latency}ms)", e)
             AppLogger.e(TAG, "Logout failed: ${e.message}", e)
             Result.failure(Exception("Portal unreachable (${e.localizedMessage ?: "network error"})", e))
         }

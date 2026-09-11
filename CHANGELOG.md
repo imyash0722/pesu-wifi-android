@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.4.0 — AP Roaming Recovery, Stale Session Auto-Eviction & Universal Diagnostics](#v140--ap-roaming-recovery-stale-session-auto-eviction--universal-diagnostics)
+  - [Overview & Major Highlights](#v140-overview--major-highlights)
 - [v1.3.0 — Resilient Socket Fallbacks, Non-Interference Mode & Diagnostic Logs](#v130--resilient-socket-fallbacks-non-interference-mode--diagnostic-logs)
   - [Overview & Major Highlights](#v130-overview--major-highlights)
 - [v1.2.1 — Portal Login Detection & Network Connectivity Fix](#v121--portal-login-detection--network-connectivity-fix)
@@ -19,6 +21,23 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.4.0 — AP Roaming Recovery, Stale Session Auto-Eviction & Universal Diagnostics
+
+**Release Date:** September 11, 2026  
+**Git Tag:** [`v1.4.0`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.0)  
+**APK Asset:** `pesu-wifi-v1.4.0.apk` (signed via APK Signature Scheme v2)  
+
+### v1.4.0 Overview & Major Highlights
+- **🔄 Seamless Access Point Roaming & Supplicant Recovery:** Resolved the issue where moving between APs (across classrooms, floors, or to the canteen) caused Wi-Fi to disconnect and fail to reconnect automatically. The auto-reconnect watchdog now identifies disabled network configurations in Android's network evaluator and invokes `enableNetwork()` on the campus configuration, commanding wpa_supplicant to immediately scan and associate with the strongest campus AP.
+- **🚪 Cyberoam Stale Lease Auto-Eviction:** Resolved the "Maximum Login Limit" trap where Cyberoam retains the session lease on the previous AP for 30–60s after a sudden handoff. When login fails with a limit or session error, `PortalApi` automatically executes an unauthenticated session eviction (`mode=193` / `logout.xml`), waits 600ms, and retries authentication transparently.
+- **⏱️ Auto-Expiring Auth Backoff:** Eliminated permanent login pauses. If authentication fails, the service enters a temporary, self-expiring cooldown (30s for server locks, 60s for credential errors) that automatically clears upon physical router (BSSID) handoff or manual retry.
+- **🛡️ Campus SSID Resilience & Zombie Session Detection:** When walking between APs, transient unreachability of the `192.168.254.1` gateway no longer causes the daemon to drop locks or enter external standby if still connected to a `PESU*` SSID. Real external route validity is verified via `http://connectivitycheck.gstatic.com/generate_204` probes to detect and purge zombie portal sessions.
+- **📡 Complete BSSID, Channel & Frequency Telemetry:** Added `FOREGROUND_SERVICE_LOCATION` permission and `dataSync|location` foreground service type, enabling unredacted capture of AP BSSID, SSID, frequency, channel, RSSI, and link speed on Android 12+ (API 31+).
+- **📋 Universal File-Backed Diagnostic Logger:** Upgraded `AppLogger` to write asynchronously to a rotating 5MB log file (`pesuwifi_universal.log`) with rolling backup. Upgraded `LogsScreen` with expandable monospace cards, category counters (Roam, Wi-Fi, Watchdog, Portal, Errors), keyword search, log file sharing via Android `FileProvider`, and one-tap log export.
+- **⏰ Android 12+ Doze Exact Alarm Keepalive:** Implemented `KeepaliveAlarmReceiver` with short partial wake locks to bypass Doze mode and prevent `ForegroundServiceStartNotAllowedException` when the device screen is off.
 
 ---
 
