@@ -63,7 +63,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.activity.compose.BackHandler
 import androidx.core.content.FileProvider
 import com.imyash.pesuwifi.service.WifiKeepaliveService
 import com.imyash.pesuwifi.service.WifiTelemetry
@@ -92,9 +91,6 @@ fun LogsScreen(
     val allLogs by AppLogger.logsFlow.collectAsState()
     val telemetry by WifiKeepaliveService.telemetryFlow.collectAsState()
     val listState = rememberLazyListState()
-
-    // Fix: intercept Android back gesture to navigate home instead of exiting the app
-    BackHandler { onNavigateBack() }
 
     var selectedCategory by remember { mutableStateOf(LogCategory.ALL) }
     var searchQuery by remember { mutableStateOf("") }

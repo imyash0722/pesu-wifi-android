@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -60,6 +61,12 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     var currentScreen by rememberSaveable { mutableStateOf(Screen.HOME) }
+
+                    // Intercept back navigation when on secondary screens (ACCOUNTS, LOGS)
+                    // When on HOME, this handler is disabled so the system back cleanly exits/minimizes the app
+                    BackHandler(enabled = currentScreen != Screen.HOME) {
+                        currentScreen = Screen.HOME
+                    }
 
                     AnimatedContent(
                         targetState = currentScreen,

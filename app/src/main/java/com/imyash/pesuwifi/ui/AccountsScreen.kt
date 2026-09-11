@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -74,9 +73,6 @@ fun AccountsScreen(
     var showImportDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var importJsonText by remember { mutableStateOf("") }
-
-    // Fix: intercept Android back gesture to navigate home instead of exiting the app
-    BackHandler { onNavigateBack() }
 
     Scaffold(
         topBar = {
