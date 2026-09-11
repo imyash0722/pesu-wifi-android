@@ -35,6 +35,8 @@ import com.imyash.pesuwifi.data.AccountRepository
 import com.imyash.pesuwifi.data.PortalApi
 import com.imyash.pesuwifi.data.PortalRepository
 import com.imyash.pesuwifi.data.WifiSuggestionManager
+import com.imyash.pesuwifi.BuildConfig
+import com.imyash.pesuwifi.data.BssidDatabase
 import com.imyash.pesuwifi.util.AppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -539,6 +541,12 @@ class WifiKeepaliveService : Service() {
                 val ch = frequencyToChannel(ap.frequency)
                 AppLogger.wifi(TAG, "  -> Campus AP: BSSID=${ap.BSSID}, SSID=\"${ap.SSID}\", RSSI=${ap.level} dBm, Freq=${ap.frequency} MHz (Ch $ch), Caps=${ap.capabilities}")
             }
+            // In stable build: record every visible campus BSSID to build a campus AP database
+            if (!BuildConfig.ENABLE_UNIVERSAL_LOGS) {
+                for (ap in campusResults) {
+                    BssidDatabase.record(applicationContext, ap.BSSID)
+                }
+            }
         } catch (e: Exception) {
             AppLogger.w(TAG, "Failed reading scan results: ${e.message}")
         }
@@ -654,6 +662,10 @@ class WifiKeepaliveService : Service() {
                             consecutiveFailureCount = 0
                             authBackoffUntilTimestamp = 0L
                             reportConnectivityValidated()
+                            // Record the connected BSSID in stable build
+                            if (!BuildConfig.ENABLE_UNIVERSAL_LOGS && lastBssid != null) {
+                                BssidDatabase.record(applicationContext, lastBssid!!)
+                            }
                         } else {
                             val err = result.exceptionOrNull()?.message ?: ""
                             val cooldownMs = if (err.contains("password", ignoreCase = true) || err.contains("credential", ignoreCase = true)) {

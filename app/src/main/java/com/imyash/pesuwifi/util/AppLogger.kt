@@ -3,6 +3,7 @@ package com.imyash.pesuwifi.util
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import com.imyash.pesuwifi.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,15 +52,19 @@ object AppLogger {
     private val fileExecutor = Executors.newSingleThreadExecutor()
 
     fun init(context: Context) {
-        synchronized(lock) {
-            if (logDir == null) {
-                val dir = File(context.applicationContext.filesDir, "logs")
-                if (!dir.exists()) dir.mkdirs()
-                logDir = dir
-                logFile = File(dir, "pesuwifi_universal.log")
+        if (BuildConfig.ENABLE_UNIVERSAL_LOGS) {
+            synchronized(lock) {
+                if (logDir == null) {
+                    val dir = File(context.applicationContext.filesDir, "logs")
+                    if (!dir.exists()) dir.mkdirs()
+                    logDir = dir
+                    logFile = File(dir, "pesuwifi_universal.log")
+                }
             }
+            i("AppLogger", "Universal Logger initialized (full) on ${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE}, API ${Build.VERSION.SDK_INT})")
+        } else {
+            i("AppLogger", "Logger initialized (stable/logcat-only) on ${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE}, API ${Build.VERSION.SDK_INT})")
         }
-        i("AppLogger", "Universal Logger initialized on ${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE}, API ${Build.VERSION.SDK_INT})")
     }
 
     fun d(tag: String, message: String) = log(LogLevel.DEBUG, tag, message)
@@ -110,26 +115,28 @@ object AppLogger {
             _logsFlow.value = logList.toList()
         }
 
-        // Asynchronously persist to file
-        val targetFile = logFile
-        if (targetFile != null) {
-            fileExecutor.execute {
-                try {
-                    synchronized(targetFile) {
-                        if (targetFile.exists() && targetFile.length() > MAX_FILE_SIZE_BYTES) {
-                            val backup = File(targetFile.parentFile, "${targetFile.name}.1")
-                            if (backup.exists()) backup.delete()
-                            targetFile.renameTo(backup)
-                        }
-                        FileWriter(targetFile, true).use { fw ->
-                            fw.append("[$fullTimeStr] [${level.name}] [$tag] $message\n")
-                            if (stackTraceStr != null) {
-                                fw.append(stackTraceStr).append("\n")
+        // Asynchronously persist to file (tester build only)
+        if (BuildConfig.ENABLE_UNIVERSAL_LOGS) {
+            val targetFile = logFile
+            if (targetFile != null) {
+                fileExecutor.execute {
+                    try {
+                        synchronized(targetFile) {
+                            if (targetFile.exists() && targetFile.length() > MAX_FILE_SIZE_BYTES) {
+                                val backup = File(targetFile.parentFile, "${targetFile.name}.1")
+                                if (backup.exists()) backup.delete()
+                                targetFile.renameTo(backup)
+                            }
+                            FileWriter(targetFile, true).use { fw ->
+                                fw.append("[$fullTimeStr] [${level.name}] [$tag] $message\n")
+                                if (stackTraceStr != null) {
+                                    fw.append(stackTraceStr).append("\n")
+                                }
                             }
                         }
+                    } catch (_: Exception) {
+                        // Ignore write failures to prevent crash loops
                     }
-                } catch (_: Exception) {
-                    // Ignore write failures to prevent crash loops
                 }
             }
         }

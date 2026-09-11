@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,7 +55,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.imyash.pesuwifi.ui.components.AccountDialog
 import com.imyash.pesuwifi.ui.theme.StatusGreen
 import com.imyash.pesuwifi.viewmodel.PortalViewModel
@@ -68,11 +68,15 @@ fun AccountsScreen(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+
     var showAddDialog by remember { mutableStateOf(false) }
     var accountToDelete by remember { mutableStateOf<String?>(null) }
     var showImportDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var importJsonText by remember { mutableStateOf("") }
+
+    // Fix: intercept Android back gesture to navigate home instead of exiting the app
+    BackHandler { onNavigateBack() }
 
     Scaffold(
         topBar = {
@@ -151,7 +155,11 @@ fun AccountsScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { viewModel.selectActiveUser(username) },
+                            .clickable {
+                                // Select the account AND auto-reconnect with it immediately
+                                viewModel.selectActiveUser(username)
+                                viewModel.login(username)
+                            },
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = if (isActive) {
@@ -186,35 +194,25 @@ fun AccountsScreen(
                                         style = MaterialTheme.typography.bodyLarge,
                                         fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
                                     )
-                                    if (isActive) {
-                                        Text(
-                                            text = "Active Account",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = StatusGreen
-                                        )
-                                    }
-                                }
-                            }
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                TextButton(
-                                    onClick = {
-                                        viewModel.selectActiveUser(username)
-                                        viewModel.login(username)
-                                    }
-                                ) {
-                                    Text("Login", fontSize = 13.sp)
-                                }
-                                IconButton(onClick = { accountToDelete = username }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete",
-                                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                    Text(
+                                        text = if (isActive) "Active — tap to reconnect" else "Tap to switch & reconnect",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isActive) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
+
+                            // Only the delete button remains — tap on card row handles login
+                            IconButton(onClick = { accountToDelete = username }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                )
+                            }
                         }
                     }
+
                 }
             }
         }

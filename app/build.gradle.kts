@@ -12,12 +12,30 @@ android {
         applicationId = "com.imyash.pesuwifi"
         minSdk = 26
         targetSdk = 34
-        versionCode = 7
-        versionName = "1.4.1"
+        versionCode = 8
+        versionName = "1.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
+        }
+    }
+
+    flavorDimensions += "track"
+
+    productFlavors {
+        create("stable") {
+            dimension = "track"
+            // app ID unchanged: com.imyash.pesuwifi
+            buildConfigField("boolean", "ENABLE_UNIVERSAL_LOGS", "false")
+            buildConfigField("boolean", "SHOW_PERMISSIONS_SECTION", "false")
+        }
+        create("beta") {
+            dimension = "track"
+            applicationIdSuffix = ".beta"        // com.imyash.pesuwifi.tester
+            versionNameSuffix = "-beta"
+            buildConfigField("boolean", "ENABLE_UNIVERSAL_LOGS", "true")
+            buildConfigField("boolean", "SHOW_PERMISSIONS_SECTION", "true")
         }
     }
 
@@ -43,6 +61,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
