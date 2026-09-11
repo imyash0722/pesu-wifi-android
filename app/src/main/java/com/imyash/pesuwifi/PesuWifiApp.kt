@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 
+import com.imyash.pesuwifi.data.WifiSuggestionManager
 import com.imyash.pesuwifi.util.AppLogger
 
 class PesuWifiApp : Application() {
@@ -14,6 +15,7 @@ class PesuWifiApp : Application() {
         super.onCreate()
         AppLogger.init(this)
         createNotificationChannels()
+        WifiSuggestionManager.ensureSuggestionRegistered(this)
     }
 
     private fun createNotificationChannels() {

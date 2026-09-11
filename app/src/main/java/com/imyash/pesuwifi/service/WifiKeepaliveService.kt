@@ -25,6 +25,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.imyash.pesuwifi.MainActivity
@@ -33,6 +34,7 @@ import com.imyash.pesuwifi.R
 import com.imyash.pesuwifi.data.AccountRepository
 import com.imyash.pesuwifi.data.PortalApi
 import com.imyash.pesuwifi.data.PortalRepository
+import com.imyash.pesuwifi.data.WifiSuggestionManager
 import com.imyash.pesuwifi.util.AppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,6 +93,8 @@ class WifiKeepaliveService : Service() {
     private var lastFrequency: Int = 0
     private var lastIpAddresses: List<String> = emptyList()
     private var lastGateway: String? = null
+    private var lastFastAuthIp: String? = null
+    private var lastFastAuthTime: Long = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -293,10 +297,12 @@ class WifiKeepaliveService : Service() {
     }
 
     private fun startInForeground() {
+        val status = portalRepository.statusFlow.value
         val notification = buildNotification(
             title = "PESU WiFi Keepalive Active",
             content = "Monitoring network status...",
-            isLoggedIn = false
+            isLoggedIn = status.isLoggedIn,
+            isWifiConnected = status.isWifiConnected
         )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -448,10 +454,13 @@ class WifiKeepaliveService : Service() {
                 addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION)
                 addAction(WifiManager.RSSI_CHANGED_ACTION)
                 addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    addAction(WifiManager.ACTION_WIFI_NETWORK_SUGGESTION_POST_CONNECTION)
+                }
             }
             registerReceiver(wifiEventReceiver, filter)
             wifiReceiverRegistered = true
-            AppLogger.d(TAG, "Registered Wi-Fi broadcast event receiver (NetworkState, Supplicant, RSSI, ScanResults)")
+            AppLogger.d(TAG, "Registered Wi-Fi broadcast event receiver (NetworkState, Supplicant, RSSI, ScanResults, NetworkSuggestionPostConn)")
         } catch (e: Exception) {
             AppLogger.w(TAG, "Could not register Wi-Fi event receiver: ${e.message}")
         }
@@ -506,6 +515,13 @@ class WifiKeepaliveService : Service() {
                 WifiManager.SCAN_RESULTS_AVAILABLE_ACTION -> {
                     val updated = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
                     logScanResults(updated)
+                }
+                WifiManager.ACTION_WIFI_NETWORK_SUGGESTION_POST_CONNECTION -> {
+                    AppLogger.wifi(TAG, "[Broadcast:SUGGESTION_POST_CONNECTION] Device connected via campus network suggestion! Initiating fast check...")
+                    serviceScope.launch {
+                        delay(150L)
+                        performKeepaliveCheck(force = true)
+                    }
                 }
             }
         }
@@ -621,7 +637,7 @@ class WifiKeepaliveService : Service() {
         // Debounce rapid AP transitions
         reconnectJob?.cancel()
         reconnectJob = serviceScope.launch {
-            delay(1200L) // Allow DHCP and interface binding to settle
+            delay(300L) // Fast 300ms debounce: DHCP and interface binding settle quickly
             performKeepaliveCheck(force = true)
 
             val status = portalRepository.statusFlow.value
@@ -725,6 +741,9 @@ class WifiKeepaliveService : Service() {
         val ipChanged = lastIpAddresses.isNotEmpty() && currentIps.isNotEmpty() && lastIpAddresses != currentIps
         val gatewayChanged = lastGateway != null && defaultGateway != null && lastGateway != defaultGateway
 
+        val hasIpv4 = currentIps.any { it.contains(".") && !it.startsWith("127.") }
+        val isCampusIp = currentIps.any { it.startsWith("10.") || it.startsWith("172.16.") }
+
         if (ipChanged || gatewayChanged) {
             AppLogger.roam(TAG, "NETWORK ROUTE CHANGED: IPs: $lastIpAddresses -> $currentIps, Gateway: $lastGateway -> $defaultGateway. Triggering roam recovery...")
             lastIpAddresses = currentIps
@@ -735,6 +754,54 @@ class WifiKeepaliveService : Service() {
             if (currentIps.isNotEmpty()) lastIpAddresses = currentIps
             if (defaultGateway != null) lastGateway = defaultGateway
             updateTelemetry()
+        }
+
+        // Zero-Latency Fast Re-Auth:
+        // As soon as link properties receive an IPv4 address on campus Wi-Fi (10.* IP or campus SSID),
+        // authenticate immediately without waiting for debounce delays so Android's captive portal probe
+        // receives a valid 204 response and avoids adding the AP BSSID to WifiBlocklistMonitor.
+        val isCampus = isCampusIp || wasCampusNetwork || lastSsid?.contains("PESU", ignoreCase = true) == true
+        if (hasIpv4 && isCampus && !isAuthBackoffActive) {
+            val validIpv4 = currentIps.firstOrNull { it.contains(".") && !it.startsWith("127.") } ?: ""
+            triggerFastReauth(network, validIpv4)
+        }
+    }
+
+    private fun triggerFastReauth(network: Network, ip: String) {
+        val now = SystemClock.elapsedRealtime()
+        if (ip == lastFastAuthIp && (now - lastFastAuthTime) < 4000L) {
+            return
+        }
+        lastFastAuthIp = ip
+        lastFastAuthTime = now
+
+        serviceScope.launch {
+            val status = portalRepository.statusFlow.value
+            if (status.isLoggedIn) {
+                AppLogger.d(TAG, "Fast re-auth check: already logged in as ${status.activeUsername}")
+                reportConnectivityValidated()
+                return@launch
+            }
+
+            val activeUser = accountRepository.getActiveUser()
+            if (activeUser != null) {
+                AppLogger.i(TAG, "⚡ FAST ZERO-LATENCY RE-AUTH triggered for $activeUser on IP $ip (<150ms after DHCP)")
+                PortalApi.evictConnectionPool()
+                val result = portalRepository.login(activeUser)
+                if (result.isSuccess) {
+                    AppLogger.i(TAG, "⚡ Fast re-auth SUCCESS for $activeUser! Network ready before captive portal check.")
+                    consecutiveFailureCount = 0
+                    authBackoffUntilTimestamp = 0L
+                    wasCampusNetwork = true
+                    acquireLocks()
+                    scheduleNextHeartbeat()
+                    reportConnectivityValidated()
+                } else {
+                    val err = result.exceptionOrNull()?.message ?: ""
+                    AppLogger.w(TAG, "⚡ Fast re-auth attempt result: $err (will fallback to normal check)")
+                }
+                updateForegroundNotification()
+            }
         }
     }
 
@@ -781,15 +848,34 @@ class WifiKeepaliveService : Service() {
             return
         }
 
-        AppLogger.watchdog(TAG, ">>> Starting Campus Auto-Reconnect Watchdog (Device Wi-Fi is ON, radio searching for next AP)...")
+        // Immediately re-assert Wi-Fi network suggestion so Android matches any campus AP
+        WifiSuggestionManager.ensureSuggestionRegistered(this)
+
+        AppLogger.watchdog(TAG, ">>> Starting Campus Auto-Reconnect Watchdog (Wi-Fi suggestion refreshed, actively searching for campus APs)...")
 
         autoReconnectWatchdogJob = serviceScope.launch {
-            val intervals = listOf(1500L, 2500L, 4000L, 7000L, 10000L, 15000L)
             val startTime = SystemClock.elapsedRealtime()
             var attempt = 0
+            var lastScanTime = 0L
 
-            for (interval in intervals) {
-                delay(interval)
+            // Adaptive schedule:
+            // - Burst phase (0 to 30s): check every 3s
+            // - Active search (30s to 3m): check every 8s
+            // - Extended standby (3m to 15m): check every 20s
+            while (isActive) {
+                val elapsed = SystemClock.elapsedRealtime() - startTime
+                if (elapsed > 15 * 60 * 1000L) { // 15-minute maximum watchdog lifetime
+                    AppLogger.watchdog(TAG, "Watchdog: 15-minute timeout reached without reconnecting. Entering quiet standby.")
+                    break
+                }
+
+                val sleepDelay = when {
+                    elapsed < 30_000L -> 3000L
+                    elapsed < 3 * 60_000L -> 8000L
+                    else -> 20000L
+                }
+
+                delay(sleepDelay)
                 if (!isActive) break
 
                 if (portalRepository.statusFlow.value.isWifiConnected) {
@@ -798,38 +884,39 @@ class WifiKeepaliveService : Service() {
                 }
 
                 if (!wm.isWifiEnabled) {
-                    AppLogger.watchdog(TAG, "Watchdog: Wi-Fi was disabled. Stopping watchdog.")
+                    AppLogger.watchdog(TAG, "Watchdog: Wi-Fi was disabled by user. Stopping watchdog.")
                     break
                 }
 
                 attempt++
-                val elapsed = SystemClock.elapsedRealtime() - startTime
-                AppLogger.watchdog(TAG, "Watchdog Attempt #$attempt/${intervals.size} (elapsed ${elapsed}ms): Calling enableNetwork(), reconnect(), reassociate(), startScan()...")
-                try {
-                    @Suppress("DEPRECATION")
-                    val configs = wm.configuredNetworks
-                    val campusConfig = configs?.firstOrNull { it.SSID != null && it.SSID.contains("PESU", ignoreCase = true) }
-                    if (campusConfig != null) {
+                val now = SystemClock.elapsedRealtime()
+
+                // Trigger scan at most once every 12s to respect Android background scan throttling
+                var scanTriggered = false
+                if (now - lastScanTime >= 12_000L) {
+                    try {
                         @Suppress("DEPRECATION")
-                        val enabled = wm.enableNetwork(campusConfig.networkId, false)
-                        AppLogger.watchdog(TAG, "  -> enableNetwork(id=${campusConfig.networkId}): $enabled")
+                        scanTriggered = wm.startScan()
+                        lastScanTime = now
+                    } catch (e: Exception) {
+                        AppLogger.w(TAG, "Watchdog startScan error: ${e.message}")
                     }
-                    @Suppress("DEPRECATION")
-                    val reconnected = wm.reconnect()
-                    @Suppress("DEPRECATION")
-                    val reassociated = wm.reassociate()
-                    @Suppress("DEPRECATION")
-                    val scanStarted = wm.startScan()
-                    AppLogger.watchdog(TAG, "  -> Action results: reconnect=$reconnected, reassociate=$reassociated, startScan=$scanStarted")
-                } catch (e: Exception) {
-                    AppLogger.w(TAG, "Watchdog error triggering reconnect/reassociate: ${e.message}")
+                }
+
+                AppLogger.watchdog(TAG, "Watchdog Attempt #$attempt (elapsed ${elapsed / 1000}s): scanTriggered=$scanTriggered")
+
+                // Periodically re-ensure network suggestion is active
+                if (attempt % 5 == 0) {
+                    WifiSuggestionManager.ensureSuggestionRegistered(this@WifiKeepaliveService)
                 }
 
                 try {
                     @Suppress("DEPRECATION")
                     val scanList = wm.scanResults
-                    val campusScan = scanList?.filter { it.SSID.contains("PESU", ignoreCase = true) }
-                    AppLogger.watchdog(TAG, "  -> Currently visible campus APs (${campusScan?.size ?: 0}): ${campusScan?.map { "${it.BSSID} (${it.level}dBm, ${it.frequency}MHz)" }}")
+                    val campusScan = scanList?.filter { it.SSID != null && it.SSID.contains("PESU", ignoreCase = true) }
+                    if (!campusScan.isNullOrEmpty()) {
+                        AppLogger.watchdog(TAG, "  -> Visible campus APs (${campusScan.size}): ${campusScan.map { "${it.BSSID} (${it.level}dBm, ${it.frequency}MHz)" }}")
+                    }
                 } catch (_: Exception) {}
             }
         }
@@ -841,7 +928,7 @@ class WifiKeepaliveService : Service() {
         consecutiveFailureCount = 0
         reconnectJob?.cancel()
         reconnectJob = serviceScope.launch {
-            delay(750L) // 750ms debounce window to allow interface routes to settle
+            delay(250L) // Fast 250ms debounce window for physical AP handover
             performKeepaliveCheck(force = true, isRoamingEvent = true)
             reportConnectivityValidated()
         }
@@ -869,12 +956,17 @@ class WifiKeepaliveService : Service() {
             else -> "Session inactive on PESU Wi-Fi. Tap to login."
         }
 
-        val notification = buildNotification(title, content, status.isLoggedIn)
+        val notification = buildNotification(title, content, status.isLoggedIn, status.isWifiConnected)
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         nm.notify(PesuWifiApp.NOTIFICATION_ID, notification)
     }
 
-    private fun buildNotification(title: String, content: String, isLoggedIn: Boolean): Notification {
+    private fun buildNotification(
+        title: String,
+        content: String,
+        isLoggedIn: Boolean,
+        isWifiConnected: Boolean = true
+    ): Notification {
         val openAppIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -895,20 +987,7 @@ class WifiKeepaliveService : Service() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val actionIntent = Intent(this, WifiKeepaliveService::class.java).apply {
-            action = if (isLoggedIn) ACTION_LOGOUT else ACTION_LOGIN
-        }
-        val actionPendingIntent = PendingIntent.getService(
-            this,
-            2,
-            actionIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val actionTitle = if (isLoggedIn) "Logout" else "Login"
-        val actionIcon = if (isLoggedIn) R.drawable.ic_logout else R.drawable.ic_login
-
-        return NotificationCompat.Builder(this, PesuWifiApp.CHANNEL_KEEPALIVE_ID)
+        val builder = NotificationCompat.Builder(this, PesuWifiApp.CHANNEL_KEEPALIVE_ID)
             .setSmallIcon(R.drawable.ic_wifi)
             .setContentTitle(title)
             .setContentText(content)
@@ -916,9 +995,42 @@ class WifiKeepaliveService : Service() {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(actionIcon, actionTitle, actionPendingIntent)
-            .addAction(R.drawable.ic_stop, "Stop", stopPendingIntent)
-            .build()
+
+        if (isWifiConnected) {
+            val actionIntent = Intent(this, WifiKeepaliveService::class.java).apply {
+                action = if (isLoggedIn) ACTION_LOGOUT else ACTION_LOGIN
+            }
+            val actionPendingIntent = PendingIntent.getService(
+                this,
+                2,
+                actionIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            val actionTitle = if (isLoggedIn) "Logout" else "Login"
+            val actionIcon = if (isLoggedIn) R.drawable.ic_logout else R.drawable.ic_login
+            builder.addAction(actionIcon, actionTitle, actionPendingIntent)
+        } else {
+            // Direct 1-tap bottom sheet for Wi-Fi panel on Android 10+ (API 29+)
+            val panelIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                Intent(Settings.Panel.ACTION_WIFI).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+            } else {
+                Intent(Settings.ACTION_WIFI_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+            }
+            val panelPendingIntent = PendingIntent.getActivity(
+                this,
+                3,
+                panelIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            builder.addAction(R.drawable.ic_wifi, "Wi-Fi Settings", panelPendingIntent)
+        }
+
+        builder.addAction(R.drawable.ic_stop, "Stop", stopPendingIntent)
+        return builder.build()
     }
 
     override fun onDestroy() {

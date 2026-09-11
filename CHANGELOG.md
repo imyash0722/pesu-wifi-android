@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.4.1 — Campus AP Auto-Reconnect, WifiNetworkSuggestion & Zero-Latency Fast Re-Auth](#v141--campus-ap-auto-reconnect-wifinetworksuggestion--zero-latency-fast-re-auth)
+  - [Overview & Major Highlights](#v141-overview--major-highlights)
 - [v1.4.0 — AP Roaming Recovery, Stale Session Auto-Eviction & Universal Diagnostics](#v140--ap-roaming-recovery-stale-session-auto-eviction--universal-diagnostics)
   - [Overview & Major Highlights](#v140-overview--major-highlights)
 - [v1.3.0 — Resilient Socket Fallbacks, Non-Interference Mode & Diagnostic Logs](#v130--resilient-socket-fallbacks-non-interference-mode--diagnostic-logs)
@@ -21,6 +23,21 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.4.1 — Campus AP Auto-Reconnect, WifiNetworkSuggestion & Zero-Latency Fast Re-Auth
+
+**Release Date:** September 11, 2026  
+**Git Tag:** [`v1.4.1`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.1)  
+**APK Asset:** `pesu-wifi-v1.4.1.apk` (signed via APK Signature Scheme v2)  
+
+### v1.4.1 Overview & Major Highlights
+- **📡 Automatic Hands-Free Campus AP Association (`WifiNetworkSuggestion`):** Solved the issue where moving into the vicinity of an unvisited campus access point caused Wi-Fi to ungracefully disconnect without automatically reconnecting. Implemented `WifiSuggestionManager` registering `PESU-EC-Campus` as an official Android `WifiNetworkSuggestion` with `setIsAppInteractionRequired(false)`, `setIsUserInteractionRequired(false)`, `setIsInitialAutojoinEnabled(true)`, and `priority = 1000`. Android's internal `WifiNetworkSelector` now automatically evaluates and connects to any campus AP in the building hands-free.
+- **⚡ Zero-Latency Fast Re-Authentication (<150ms):** Previously, a 1200ms connection debounce allowed Android's captive portal detector to send its HTTP probe before portal authentication completed, causing Android's `WifiBlocklistMonitor` to add the AP BSSID to a 5-minute blocklist (`REASON_NETWORK_VALIDATION_FAILURE`). In `handleNetworkLinkPropertiesChanged`, authentication now triggers immediately upon IPv4 assignment (`10.*`), ensuring internet connectivity is validated before the captive portal check times out.
+- **🐕 15-Minute Adaptive Auto-Reconnect Watchdog:** Overhauled `triggerCampusAutoReconnectWatchdog` with an adaptive 3-phase scanning backoff schedule (burst 3s, active 8s, extended 20s up to 15 minutes) with periodic suggestion re-assertion and throttled AP scans (`WifiManager.startScan()`), covering dead zones between classrooms, floors, or buildings.
+- **📲 Direct 1-Tap Wi-Fi Settings Notification Action:** When Wi-Fi drops, the persistent foreground notification dynamically presents a direct "Wi-Fi Settings" action that triggers Android's native `Settings.Panel.ACTION_WIFI` bottom sheet on Android 10+ (API 29+) without navigating away from the current foreground task.
+- **🔔 Suggestion Post-Connection Broadcast Receiver:** Added broadcast receiver for `ACTION_WIFI_NETWORK_SUGGESTION_POST_CONNECTION` on Android 10+, triggering instant validation upon association with any suggested AP.
 
 ---
 
