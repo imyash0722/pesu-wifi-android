@@ -13,7 +13,7 @@ android {
         minSdk = 26
         targetSdk = 34
         versionCode = 8
-        versionName = "1.5.0"
+        versionName = "1.4.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -32,8 +32,8 @@ android {
         }
         create("beta") {
             dimension = "track"
-            applicationIdSuffix = ".beta"        // com.imyash.pesuwifi.tester
-            versionNameSuffix = "-beta"
+            applicationIdSuffix = ".beta"
+            versionNameSuffix = "-tester"
             buildConfigField("boolean", "ENABLE_UNIVERSAL_LOGS", "true")
             buildConfigField("boolean", "SHOW_PERMISSIONS_SECTION", "true")
         }

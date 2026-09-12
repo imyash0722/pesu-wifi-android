@@ -3,7 +3,7 @@
 Native Android companion app for PESU captive portal login, session management, and continuous keepalive. Replicates the core logic of the `pesu-wifi` CLI with a clean Material 3 interface and background Foreground Service.
 
 [![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases)
-[![Download APK](https://img.shields.io/badge/Download-APK%20(v1.4.1)-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.4.1/pesu-wifi-v1.4.1.apk)
+[![Download APK](https://img.shields.io/badge/Download-APK%20(v1.4.5)-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.4.5/pesu-wifi-v1.4.5.apk)
 [![Changelog](https://img.shields.io/badge/Changelog-Release%20Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -69,6 +69,7 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 ## Release History & Changelog
 
 See [**CHANGELOG.md**](CHANGELOG.md) for full commit-by-commit technical breakdowns:
+- [**v1.4.5**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.5) — Material You redesign, dual flavor builds (Stable & Tester), campus BSSID cataloging, 1-tap account switch & auto-reconnect, and Android back navigation gesture fixes.
 - [**v1.4.1**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.1) — Campus AP auto-reconnect via `WifiNetworkSuggestion`, zero-latency fast re-auth (<150ms), 15-minute adaptive watchdog, and 1-tap Wi-Fi Settings panel.
 - [**v1.4.0**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.0) — Physical AP roaming recovery, stale Cyberoam session auto-eviction, auto-expiring cooldowns, and universal file-backed diagnostics.
 - [**v1.3.0**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.3.0) — Socket binding EPERM fallback, non-interference standby mode, and in-app logs.

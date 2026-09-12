@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.4.5 — Material You Redesign, Dual Flavors (Stable & Tester), BSSID Cataloging & Back Navigation](#v145--material-you-redesign-dual-flavors-stable--tester-bssid-cataloging--back-navigation)
+  - [Overview & Major Highlights](#v145-overview--major-highlights)
 - [v1.4.1 — Campus AP Auto-Reconnect, WifiNetworkSuggestion & Zero-Latency Fast Re-Auth](#v141--campus-ap-auto-reconnect-wifinetworksuggestion--zero-latency-fast-re-auth)
   - [Overview & Major Highlights](#v141-overview--major-highlights)
 - [v1.4.0 — AP Roaming Recovery, Stale Session Auto-Eviction & Universal Diagnostics](#v140--ap-roaming-recovery-stale-session-auto-eviction--universal-diagnostics)
@@ -23,6 +25,33 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.4.5 — Material You Redesign, Dual Flavors (Stable & Tester), BSSID Cataloging & Back Navigation
+
+**Release Date:** September 12, 2026  
+**Git Tag:** [`v1.4.5`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.5)  
+**APK Assets:**  
+- `pesu-wifi-v1.4.5.apk` / `pesu-wifi-v1.4.5-stable.apk` (Production / Stable track — lightweight, BSSID cataloging, no verbose disk logging)  
+- `pesu-wifi-v1.4.5-tester.apk` (Tester track — full universal diagnostic logging and permissions section access)  
+
+### v1.4.5 Overview & Major Highlights
+- **🎨 Material You Minimalist Redesign:** Redesigned `HomeScreen` with a clean, ambient Material 3 aesthetic conforming to system dynamic color palettes:
+  - Centered hero section with a pulsating Wi-Fi emblem and tonal ambient ring during active connection.
+  - Minimal status chip with live status indicator ("Authenticated" / "Connected" / "Disconnected").
+  - Compact tonal active-account chip with quick chevron navigation to account manager.
+  - Prominent full-width pill action button ("Connect" / "Disconnect").
+  - Flat, borderless list tile for background keepalive daemon toggle (eliminates heavy card borders).
+- **📦 Dual Build Flavors (Stable vs. Tester):** Added Gradle product flavors to provide tailored binaries:
+  - **Stable** (`com.imyash.pesuwifi`): Production build with minimal logging overhead, quiet background operation, and no persistent permissions card on Home.
+  - **Tester** (`com.imyash.pesuwifi.beta`): Diagnostic build with rotating 5MB file logging (`pesuwifi_universal.log`) and full permissions configuration section. Can be installed side-by-side with Stable.
+- **🗺️ Campus AP BSSID Cataloging (`BssidDatabase`):** Lightweight persistent database collecting unique MAC addresses of all campus access points seen in scans and active connections. Powers future offline roaming optimizations without verbose disk logs.
+- **⚡ 1-Tap Account Switch & Auto-Reconnect:** In Manage Accounts, tapping any account card immediately switches active credentials and authenticates with that account in one gesture. Removed redundant "Login" text buttons for a cleaner interface.
+- **🔙 Android Navigation Gesture & SingleTask Stack Fix:**
+  - Configured `android:launchMode="singleTask"` on `MainActivity` to eliminate duplicate Activity stacking when opened via notifications, Quick Settings tile, or launcher.
+  - Centralized back navigation with `BackHandler(enabled = currentScreen != Screen.HOME)`, ensuring swiping back from Manage Accounts or Logs returns to Home, while swiping back on Home exits cleanly in a single swipe without showing duplicate Home screens.
+- **✨ New App Launcher Icon:** Generated high-resolution adaptive launcher icons across all mipmap densities (`mdpi` through `xxxhdpi`) from new official branding assets.
 
 ---
 
