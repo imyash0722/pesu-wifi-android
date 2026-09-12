@@ -3,8 +3,9 @@
 Native Android companion app for PESU captive portal login, session management, and continuous keepalive. Replicates the core logic of the `pesu-wifi` CLI with a clean Material 3 interface and background Foreground Service.
 
 [![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases)
-[![Download APK](https://img.shields.io/badge/Download-APK%20(v1.4.5%20Stable)-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.4.5/pesu-wifi-v1.4.5-stable.apk)
-[![Changelog](https://img.shields.io/badge/Changelog-Release%20Notes-green.svg)](CHANGELOG.md)
+[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.4.5-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.4.5/pesu-wifi-v1.4.5-stable.apk)
+[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.4.5-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.4.5/pesu-wifi-v1.4.5-tester.apk)
+[![Changelog](https://img.shields.io/badge/Changelog-Release_Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
