@@ -50,18 +50,27 @@ export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
 # Run unit tests
 ./gradlew testDebugUnitTest
 
-# Build signed release APK
+# Build signed release APKs (both Stable and Tester)
 ./gradlew assembleRelease
+
+# Or build individual flavors:
+./gradlew assembleStableRelease  # Stable track
+./gradlew assembleBetaRelease    # Tester track
 ```
 
-The compiled release APK will be located at:
+The compiled release APKs will be located at:
 ```text
-app/build/outputs/apk/release/app-release.apk
+app/build/outputs/apk/stable/release/app-stable-release.apk  (Stable)
+app/build/outputs/apk/beta/release/app-beta-release.apk      (Tester)
 ```
 
 To install on a connected Android phone:
 ```bash
-adb install -r app/build/outputs/apk/release/app-release.apk
+# Install Stable
+adb install -r app/build/outputs/apk/stable/release/app-stable-release.apk
+
+# Install Tester (side-by-side)
+adb install -r app/build/outputs/apk/beta/release/app-beta-release.apk
 ```
 
 ---
