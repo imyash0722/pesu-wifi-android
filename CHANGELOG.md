@@ -33,7 +33,7 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 **Release Date:** September 12, 2026  
 **Git Tag:** [`v1.4.5`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.5)  
 **APK Assets:**  
-- `pesu-wifi-v1.4.5.apk` / `pesu-wifi-v1.4.5-stable.apk` (Production / Stable track — lightweight, BSSID cataloging, no verbose disk logging)  
+- `pesu-wifi-v1.4.5-stable.apk` (Production / Stable track — lightweight, BSSID cataloging, no verbose disk logging)  
 - `pesu-wifi-v1.4.5-tester.apk` (Tester track — full universal diagnostic logging and permissions section access)  
 
 ### v1.4.5 Overview & Major Highlights
