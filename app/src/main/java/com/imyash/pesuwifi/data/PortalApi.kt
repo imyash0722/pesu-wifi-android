@@ -28,15 +28,25 @@ object PortalApi {
     val liveUrl: String get() = "$portalBaseUrl/live"
     val probeUrl: String get() = "$portalBaseUrl/httpclient.html"
 
+    enum class InternetProbeResult {
+        ONLINE,          // HTTP 204 received: true internet connectivity
+        CAPTIVE_PORTAL,  // HTTP 200..399 received (not 204): captive portal / Cyberoam redirect
+        FAILED           // Network timeout or DNS resolution failure
+    }
+
     @Volatile
     private var wifiSocketFactory: SocketFactory? = null
 
+    @Volatile
+    private var wifiLocalAddress: java.net.InetAddress? = null
+
     /**
-     * Binds OkHttp calls to the Wi-Fi network interface's SocketFactory so that
+     * Binds OkHttp calls to the Wi-Fi network interface's SocketFactory and local IP address so that
      * campus portal requests bypass Mobile Data / Cellular routing and Tailscale VPN tunnels.
      */
-    fun setWifiSocketFactory(factory: SocketFactory?) {
+    fun setWifiSocketFactory(factory: SocketFactory?, localAddress: java.net.InetAddress? = null) {
         wifiSocketFactory = factory
+        wifiLocalAddress = localAddress
     }
 
     /**
@@ -65,14 +75,18 @@ object PortalApi {
         }
         .build()
 
-    private fun getClient(timeoutMs: Long): OkHttpClient {
+    private fun getClient(timeoutMs: Long, callTimeoutMs: Long? = null): OkHttpClient {
         val builder = baseClient.newBuilder()
             .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
             .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
             .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
 
+        callTimeoutMs?.let {
+            builder.callTimeout(it, TimeUnit.MILLISECONDS)
+        }
+
         wifiSocketFactory?.let { factory ->
-            builder.socketFactory(ResilientSocketFactory(factory))
+            builder.socketFactory(ResilientSocketFactory(factory, wifiLocalAddress))
         }
         return builder.build()
     }
@@ -144,26 +158,35 @@ object PortalApi {
 
     /**
      * Verifies whether real outbound HTTP traffic routes to the internet without captive interception.
-     * Returns true if HTTP 204 No Content is returned by Google's connectivity check.
+     * Returns InternetProbeResult.ONLINE if HTTP 204 No Content is returned,
+     * CAPTIVE_PORTAL if HTTP 200..399 is returned (Cyberoam / captive redirect),
+     * or FAILED on network/DNS timeout.
      */
-    suspend fun verifyInternetConnectivity(): Boolean = withContext(Dispatchers.IO) {
+    suspend fun verifyInternetConnectivity(): InternetProbeResult = withContext(Dispatchers.IO) {
         val start = System.currentTimeMillis()
         try {
             val request = Request.Builder()
                 .url("http://connectivitycheck.gstatic.com/generate_204")
                 .get()
                 .build()
-            val code = getClient(3000).newCall(request).execute().use { response ->
+            val code = getClient(timeoutMs = 2500, callTimeoutMs = 3000).newCall(request).execute().use { response ->
                 response.code
             }
             val latency = System.currentTimeMillis() - start
-            val ok = code == 204
-            AppLogger.portal(TAG, "verifyInternetConnectivity probe: result=$ok (HTTP $code, latency=${latency}ms)")
-            ok
+            val result = when (code) {
+                204 -> InternetProbeResult.ONLINE
+                in 200..399 -> {
+                    AppLogger.roam(TAG, "verifyInternetConnectivity: Captive portal intercept detected (HTTP $code, latency=${latency}ms)")
+                    InternetProbeResult.CAPTIVE_PORTAL
+                }
+                else -> InternetProbeResult.FAILED
+            }
+            AppLogger.portal(TAG, "verifyInternetConnectivity probe: result=$result (HTTP $code, latency=${latency}ms)")
+            result
         } catch (e: Exception) {
             val latency = System.currentTimeMillis() - start
             AppLogger.d(TAG, "verifyInternetConnectivity probe error: ${e.message} (latency=${latency}ms)")
-            false
+            InternetProbeResult.FAILED
         }
     }
 

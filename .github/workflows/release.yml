@@ -37,7 +37,7 @@ jobs:
       - name: Package Release APKs
         run: |
           mkdir -p release-apk
-          TAG_NAME="${GITHUB_REF_NAME:-v1.4.5}"
+          TAG_NAME="${GITHUB_REF_NAME:-v1.4.6}"
           cp app/build/outputs/apk/stable/release/app-stable-release.apk "release-apk/pesu-wifi-${TAG_NAME}-stable.apk"
           cp app/build/outputs/apk/beta/release/app-beta-release.apk "release-apk/pesu-wifi-${TAG_NAME}-tester.apk"
 

@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.4.6 — Classroom Wi-Fi Stability, Tailscale Socket Resiliency & UI Polish](#v146--classroom-wi-fi-stability-tailscale-socket-resiliency--ui-polish)
+  - [Overview & Major Highlights](#v146-overview--major-highlights)
 - [v1.4.5 — Material You Redesign, Dual Flavors (Stable & Tester), BSSID Cataloging & Back Navigation](#v145--material-you-redesign-dual-flavors-stable--tester-bssid-cataloging--back-navigation)
   - [Overview & Major Highlights](#v145-overview--major-highlights)
 - [v1.4.1 — Campus AP Auto-Reconnect, WifiNetworkSuggestion & Zero-Latency Fast Re-Auth](#v141--campus-ap-auto-reconnect-wifinetworksuggestion--zero-latency-fast-re-auth)
@@ -25,6 +27,24 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.4.6 — Classroom Wi-Fi Stability, Tailscale Socket Resiliency & UI Polish
+
+**Release Date:** September 15, 2026  
+**Git Tag:** [`v1.4.6`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.6)  
+**APK Assets:**  
+- `pesu-wifi-v1.4.6-stable.apk` (Production / Stable track — lightweight, minimal background overhead)  
+- `pesu-wifi-v1.4.6-tester.apk` (Tester track — diagnostic build with universal logging & permissions management)  
+
+### v1.4.6 Overview & Major Highlights
+- **🏫 Subnet & Gateway Heuristics (`isCampusNetwork`)**: Overcomes Android 12+ location privacy and SSID suppression (`null` or `"<unknown ssid>"`) by inspecting `LinkProperties` IPv4 interfaces for PESU campus subnets (`10.0.0.0/8`, `172.16.0.0/12`), gateways (`10.*`, `192.168.254.*`), and campus DNS (`192.168.3.2`). Ensures classroom Wi-Fi is never mistakenly labeled "External Wi-Fi" or "Disconnected".
+- **🛡️ Tailscale / VPN Socket Resiliency**: When system VPN services (e.g., Tailscale) trigger an `EPERM` (Operation not permitted) error on Android's native `Network.bindSocket()`, `ResilientSocketFactory` seamlessly falls back to binding directly to the local Wi-Fi network interface IPv4 address (`10.1.*.*`), routing portal keepalive requests cleanly around VPN tunnels.
+- **⏱️ DNS & Connect Timeout Hardening**: Implemented strict 3-second call timeouts in `PortalApi` to prevent OkHttp DNS resolution and gateway probes from stalling indefinitely during AP roaming transitions or VPN route changes.
+- **🔄 Transient Drop Debouncing**: Separated genuine captive portal redirection signals from transient packet/DNS timeouts. Authentic portal redirects trigger immediate re-authentication, while transient timeout dips require 3 consecutive failed probes before session invalidation, eliminating false "Zombie Session" drops.
+- **🔴 High-Contrast Disconnect Button**: Changed the "Disconnect" button color scheme to bold `StatusRed` (`#D32F2F`) with solid white text/icons, completely bypassing Android 12 Dynamic Theming (Material You) pastel error palette washing on Samsung One UI.
+- **📱 Clearer Connection Status Chip**: Differentiates between physical Wi-Fi disconnection, external Wi-Fi, gateway unreachable, and active authentication.
 
 ---
 

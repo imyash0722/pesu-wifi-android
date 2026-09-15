@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import java.net.Inet4Address
+import java.net.InetAddress
 
 data class PortalStatus(
     val isWifiConnected: Boolean = false,
@@ -32,6 +34,15 @@ class PortalRepository(
 
     private val _statusFlow = MutableStateFlow(PortalStatus())
     val statusFlow: StateFlow<PortalStatus> = _statusFlow.asStateFlow()
+
+    private var consecutiveProbeFailures = 0
+
+    fun getWifiLocalAddress(wifiNet: Network? = null): InetAddress? {
+        val net = wifiNet ?: getWifiNetwork() ?: return null
+        val lp = connectivityManager?.getLinkProperties(net) ?: return null
+        return lp.linkAddresses.map { it.address }
+            .firstOrNull { it is Inet4Address && !it.isLoopbackAddress }
+    }
 
     /**
      * Resolves the active Wi-Fi Network instance across all available network interfaces.
@@ -94,13 +105,57 @@ class PortalRepository(
         return ssid.contains("PESU", ignoreCase = true)
     }
 
+    /**
+     * Determines whether the given (or active) Wi-Fi network is the PESU campus network.
+     * Checks multiple signals to avoid false negatives when Android 12 suppresses SSID:
+     * 1. SSID contains "PESU"
+     * 2. IPv4 address is in campus private ranges (10.0.0.0/8 or 172.16.0.0/12)
+     * 3. Default gateway is in campus subnet (10.* or 192.168.254.*)
+     * 4. DNS servers include campus nameservers (192.168.3.2)
+     * 5. Sticky session preservation: if previously confirmed as campus Wi-Fi on active connection
+     */
+    fun isCampusNetwork(wifiNet: Network? = null): Boolean {
+        val net = wifiNet ?: getWifiNetwork() ?: return false
+
+        // 1. Check SSID if available
+        val ssid = getCurrentWifiSsid(net)
+        if (isCampusSsid(ssid)) return true
+
+        // 2. Check LinkProperties for campus IP subnets & routes
+        val lp = connectivityManager?.getLinkProperties(net)
+        if (lp != null) {
+            val ips = lp.linkAddresses.mapNotNull { it.address.hostAddress }
+            val isCampusIp = ips.any { it.startsWith("10.") || it.startsWith("172.16.") || it.startsWith("172.17.") }
+            if (isCampusIp) return true
+
+            val gw = lp.routes.firstOrNull { it.isDefaultRoute }?.gateway?.hostAddress
+            if (gw != null && (gw.startsWith("10.") || gw.startsWith("192.168.254.") || gw.startsWith("172."))) {
+                return true
+            }
+
+            val dns = lp.dnsServers.mapNotNull { it.hostAddress }
+            if (dns.any { it == "192.168.3.2" || it.startsWith("10.") }) {
+                return true
+            }
+        }
+
+        // 3. Sticky campus preservation: do not demote to external if previously confirmed on this Wi-Fi
+        if (_statusFlow.value.isWifiConnected && _statusFlow.value.isPesuWifi) {
+            return true
+        }
+
+        return false
+    }
+
     suspend fun refreshStatus(): PortalStatus = withContext(Dispatchers.IO) {
         val wifiNet = getWifiNetwork()
-        api.setWifiSocketFactory(wifiNet?.socketFactory)
+        val localIp = getWifiLocalAddress(wifiNet)
+        api.setWifiSocketFactory(wifiNet?.socketFactory, localIp)
 
         val activeUser = accountRepository.getActiveUser()
 
         if (wifiNet == null) {
+            consecutiveProbeFailures = 0
             val status = PortalStatus(
                 isWifiConnected = false,
                 isPesuWifi = false,
@@ -116,15 +171,15 @@ class PortalRepository(
         }
 
         val currentSsid = getCurrentWifiSsid(wifiNet)
-        val isCampusNetwork = isCampusSsid(currentSsid)
+        val isCampus = isCampusNetwork(wifiNet)
 
         val start = System.currentTimeMillis()
         val portalUp = api.isPortalOnline()
         val latency = System.currentTimeMillis() - start
 
         if (!portalUp) {
-            if (isCampusNetwork) {
-                // Connected to campus AP, but gateway probe failed (e.g. roaming transition or weak signal)
+            if (isCampus) {
+                // Connected to campus AP, but gateway probe failed (roaming, packet drop, or VPN routing RFC-1918)
                 val status = PortalStatus(
                     isWifiConnected = true,
                     isPesuWifi = true, // Preserve campus classification so keepalive loop does not terminate
@@ -133,10 +188,10 @@ class PortalRepository(
                     activeUsername = activeUser,
                     latencyMs = latency,
                     lastCheckedTimestamp = System.currentTimeMillis(),
-                    statusMessage = "PESU Wi-Fi: Gateway probe unreachable (roaming...)"
+                    statusMessage = "PESU Wi-Fi: Gateway probe unreachable (roaming or VPN active)"
                 )
                 _statusFlow.value = status
-                AppLogger.roam("PortalRepository", "refreshStatus: Campus SSID '$currentSsid' active, but gateway probe unreachable. Preserving campus mode (latency ${latency}ms)")
+                AppLogger.roam("PortalRepository", "refreshStatus: Campus network active (SSID='$currentSsid', IP='${localIp?.hostAddress}'), but gateway unreachable. Preserving campus mode (latency ${latency}ms)")
                 return@withContext status
             } else {
                 // Truly external Wi-Fi (Home, Hotspot, Office) where PESU gateway does not exist
@@ -161,17 +216,33 @@ class PortalRepository(
 
         if (loggedIn) {
             // Verify real internet routing to catch "Zombie Sessions" (Cyberoam says live, but AP intercepts)
-            val internetOk = api.verifyInternetConnectivity()
-            if (!internetOk) {
-                AppLogger.roam("PortalRepository", "ZOMBIE SESSION DETECTED: checkLive reported true, but internet probe (generate_204) failed/intercepted. Invalidating session state to force re-auth.")
-                loggedIn = false
-            } else {
-                try {
-                    connectivityManager?.reportNetworkConnectivity(wifiNet, true)
-                } catch (e: Exception) {
-                    // Ignore security or OEM restrictions
+            val probeResult = api.verifyInternetConnectivity()
+            when (probeResult) {
+                PortalApi.InternetProbeResult.CAPTIVE_PORTAL -> {
+                    AppLogger.roam("PortalRepository", "ZOMBIE SESSION DETECTED: checkLive reported true, but captive portal intercepted HTTP traffic. Invalidating session state to force re-auth.")
+                    loggedIn = false
+                    consecutiveProbeFailures = 0
+                }
+                PortalApi.InternetProbeResult.ONLINE -> {
+                    consecutiveProbeFailures = 0
+                    try {
+                        connectivityManager?.reportNetworkConnectivity(wifiNet, true)
+                    } catch (e: Exception) {
+                        // Ignore security or OEM restrictions
+                    }
+                }
+                PortalApi.InternetProbeResult.FAILED -> {
+                    consecutiveProbeFailures++
+                    if (consecutiveProbeFailures >= 3) {
+                        AppLogger.roam("PortalRepository", "Internet probe failed 3 consecutive times. Invalidating session state to force re-auth.")
+                        loggedIn = false
+                    } else {
+                        AppLogger.d("PortalRepository", "Internet probe timed out/failed ($consecutiveProbeFailures/3), keeping session active as Cyberoam confirmed live")
+                    }
                 }
             }
+        } else {
+            consecutiveProbeFailures = 0
         }
 
         val message = if (loggedIn) {
@@ -197,7 +268,7 @@ class PortalRepository(
 
     suspend fun login(targetUsername: String? = null): Result<String> = withContext(Dispatchers.IO) {
         val wifiNet = getWifiNetwork()
-        api.setWifiSocketFactory(wifiNet?.socketFactory)
+        api.setWifiSocketFactory(wifiNet?.socketFactory, getWifiLocalAddress(wifiNet))
 
         val username = targetUsername ?: accountRepository.getActiveUser()
             ?: run {
@@ -228,7 +299,7 @@ class PortalRepository(
 
     suspend fun logout(): Result<String> = withContext(Dispatchers.IO) {
         val wifiNet = getWifiNetwork()
-        api.setWifiSocketFactory(wifiNet?.socketFactory)
+        api.setWifiSocketFactory(wifiNet?.socketFactory, getWifiLocalAddress(wifiNet))
 
         val username = accountRepository.getActiveUser() ?: "user"
         AppLogger.i("PortalRepository", "Initiating logout for $username")

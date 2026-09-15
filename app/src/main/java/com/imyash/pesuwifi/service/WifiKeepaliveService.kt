@@ -325,6 +325,17 @@ class WifiKeepaliveService : Service() {
         }
     }
 
+    private fun isCampusNetworkActive(): Boolean {
+        val status = portalRepository.statusFlow.value
+        if (status.isPesuWifi) return true
+        if (portalRepository.isCampusNetwork(activeWifiNetwork)) return true
+        if (wasCampusNetwork) return true
+        if (lastSsid?.contains("PESU", ignoreCase = true) == true) return true
+        if (lastIpAddresses.any { it.startsWith("10.") || it.startsWith("172.16.") || it.startsWith("172.17.") }) return true
+        if (lastGateway?.startsWith("10.") == true || lastGateway?.startsWith("192.168.254.") == true) return true
+        return false
+    }
+
     private suspend fun performKeepaliveCheck(force: Boolean = false, isRoamingEvent: Boolean = false) {
         val now = SystemClock.elapsedRealtime()
         if (!force && now - lastCheckTimestamp < 35_000L) {
@@ -337,7 +348,7 @@ class WifiKeepaliveService : Service() {
             val status = portalRepository.refreshStatus()
             updateForegroundNotification()
 
-            if (status.isWifiConnected && status.isPesuWifi) {
+            if (status.isWifiConnected && (status.isPesuWifi || isCampusNetworkActive())) {
                 // Connected to campus Wi-Fi
                 wasCampusNetwork = true
                 acquireLocks()
@@ -385,14 +396,14 @@ class WifiKeepaliveService : Service() {
                     }
                 }
             } else {
-                // Non-interference mode: check if connected to campus SSID before dropping locks
-                val isKnownCampus = lastSsid?.contains("PESU", ignoreCase = true) == true
-                if (isKnownCampus && status.isWifiConnected) {
-                    // Connected to campus SSID, but gateway probe was temporarily unreachable during roaming
+                // Non-interference mode: check if connected to campus before dropping locks
+                val isCampus = isCampusNetworkActive()
+                if (isCampus && status.isWifiConnected) {
+                    // Connected to campus, but gateway probe was temporarily unreachable during roaming or VPN
                     wasCampusNetwork = true
                     acquireLocks()
                     scheduleNextHeartbeat()
-                    AppLogger.roam(TAG, "Campus SSID ($lastSsid) active but gateway probe unreachable. Holding locks and continuing keepalive.")
+                    AppLogger.roam(TAG, "Campus network active (IPs=$lastIpAddresses, SSID=$lastSsid) but gateway probe unreachable. Holding locks and continuing keepalive.")
                 } else {
                     consecutiveFailureCount = 0
                     releaseLocks() // Release CPU WakeLock and WifiLock so device can sleep
@@ -432,7 +443,7 @@ class WifiKeepaliveService : Service() {
             while (isActive) {
                 performKeepaliveCheck()
                 val status = portalRepository.statusFlow.value
-                val isCampus = status.isPesuWifi || lastSsid?.contains("PESU", ignoreCase = true) == true
+                val isCampus = isCampusNetworkActive()
 
                 if (!isCampus && status.isWifiConnected) {
                     AppLogger.i(TAG, "Keepalive loop: Non-campus Wi-Fi ($lastSsid) detected. Entering dormant standby.")
@@ -649,7 +660,7 @@ class WifiKeepaliveService : Service() {
             performKeepaliveCheck(force = true)
 
             val status = portalRepository.statusFlow.value
-            val isKnownCampus = portalRepository.isCampusSsid(portalRepository.getCurrentWifiSsid())
+            val isKnownCampus = isCampusNetworkActive()
             if (status.isWifiConnected && (status.isPesuWifi || isKnownCampus)) {
                 wasCampusNetwork = true
                 AppLogger.i(TAG, "Campus Wi-Fi confirmed on connection")

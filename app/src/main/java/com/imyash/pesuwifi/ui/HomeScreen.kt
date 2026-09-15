@@ -45,6 +45,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -72,6 +73,7 @@ import com.imyash.pesuwifi.ui.components.PermissionsCard
 import com.imyash.pesuwifi.ui.components.PermissionsRequiredDialog
 import com.imyash.pesuwifi.ui.theme.StatusAmber
 import com.imyash.pesuwifi.ui.theme.StatusGreen
+import com.imyash.pesuwifi.ui.theme.StatusRed
 import com.imyash.pesuwifi.util.PermissionManager
 import com.imyash.pesuwifi.viewmodel.PortalViewModel
 
@@ -142,12 +144,15 @@ fun HomeScreen(
 
     val isConnected = state.status.isWifiConnected && state.status.isPesuWifi
     val isLoggedIn = state.status.isLoggedIn
+    val isExternalWifi = state.status.isWifiConnected && !state.status.isPesuWifi
 
     // Status color & text
     val statusColor = when {
+        !state.status.isWifiConnected -> MaterialTheme.colorScheme.onSurfaceVariant
+        isExternalWifi -> MaterialTheme.colorScheme.outline
         isLoggedIn -> StatusGreen
         isConnected -> StatusAmber
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> StatusAmber
     }
     val statusTitle = when {
         !state.status.isWifiConnected -> "Wi-Fi Disconnected"
@@ -233,6 +238,8 @@ fun HomeScreen(
                         .background(
                             if (isConnected)
                                 statusColor.copy(alpha = 0.12f)
+                            else if (isExternalWifi)
+                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
                             else
                                 MaterialTheme.colorScheme.surfaceVariant
                         )
@@ -240,7 +247,7 @@ fun HomeScreen(
                     Icon(
                         imageVector = if (state.status.isWifiConnected) Icons.Default.Wifi else Icons.Default.WifiOff,
                         contentDescription = null,
-                        tint = if (isConnected) statusColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (isConnected) statusColor else if (isExternalWifi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(48.dp)
                     )
                 }
@@ -268,10 +275,11 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             // Status pill chip
+            val pillColor = if (isExternalWifi) MaterialTheme.colorScheme.primary else statusColor
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50.dp))
-                    .background(statusColor.copy(alpha = 0.12f))
+                    .background(pillColor.copy(alpha = 0.12f))
                     .padding(horizontal = 14.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -279,18 +287,21 @@ fun HomeScreen(
                     modifier = Modifier
                         .size(8.dp)
                         .clip(CircleShape)
-                        .background(statusColor)
+                        .background(pillColor)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = when {
+                        !state.status.isWifiConnected -> "Disconnected"
+                        isExternalWifi -> "External Wi-Fi"
+                        !state.status.isPortalOnline -> "Gateway unreachable"
                         isLoggedIn -> "Authenticated"
                         isConnected -> "Connected, not logged in"
-                        else -> "Disconnected"
+                        else -> "Connecting..."
                     },
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = statusColor
+                    color = pillColor
                 )
             }
 
@@ -342,7 +353,8 @@ fun HomeScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(50.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isLoggedIn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    containerColor = if (isLoggedIn) StatusRed else MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
                 ),
                 enabled = !state.isLoading && state.accounts.isNotEmpty()
             ) {
