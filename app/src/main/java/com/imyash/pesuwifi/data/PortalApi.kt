@@ -4,17 +4,24 @@ import android.util.Log
 import com.imyash.pesuwifi.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.ConnectionPool
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
+import java.io.IOException
 import java.io.StringReader
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
 import javax.net.SocketFactory
+import kotlin.coroutines.resume
 
 object PortalApi {
     private const val TAG = "PesuWifiApi"
@@ -76,14 +83,12 @@ object PortalApi {
         .build()
 
     private fun getClient(timeoutMs: Long, callTimeoutMs: Long? = null): OkHttpClient {
+        val effectiveCallTimeout = callTimeoutMs ?: (timeoutMs + 2000L)
         val builder = baseClient.newBuilder()
             .connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
             .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
             .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
-
-        callTimeoutMs?.let {
-            builder.callTimeout(it, TimeUnit.MILLISECONDS)
-        }
+            .callTimeout(effectiveCallTimeout, TimeUnit.MILLISECONDS)
 
         wifiSocketFactory?.let { factory ->
             builder.socketFactory(ResilientSocketFactory(factory, wifiLocalAddress))
@@ -95,25 +100,34 @@ object PortalApi {
 
     /**
      * Fast gateway check to determine if portal is reachable.
+     * Includes a fast jitter retry (300ms) to avoid false negatives during Wi-Fi packet drops.
      */
     suspend fun isPortalOnline(): Boolean = withContext(Dispatchers.IO) {
-        val start = System.currentTimeMillis()
-        try {
-            val request = Request.Builder()
-                .url(probeUrl)
-                .get()
-                .build()
-            val (code, ok) = getClient(3500).newCall(request).execute().use { response ->
-                Pair(response.code, response.code in 200..499)
+        suspend fun attempt(attemptNum: Int): Boolean {
+            val start = System.currentTimeMillis()
+            return try {
+                val request = Request.Builder()
+                    .url(probeUrl)
+                    .get()
+                    .build()
+                val (code, ok) = getClient(2500, callTimeoutMs = 3000).newCall(request).execute().use { response ->
+                    Pair(response.code, response.code in 200..499)
+                }
+                val latency = System.currentTimeMillis() - start
+                AppLogger.portal(TAG, "isPortalOnline probe(attempt=$attemptNum): reachable=$ok (HTTP $code, latency=${latency}ms, url=$probeUrl)")
+                ok
+            } catch (e: Exception) {
+                val latency = System.currentTimeMillis() - start
+                AppLogger.portal(TAG, "isPortalOnline probe(attempt=$attemptNum) unreachable: ${e.message} (latency=${latency}ms, url=$probeUrl)")
+                false
             }
-            val latency = System.currentTimeMillis() - start
-            AppLogger.portal(TAG, "isPortalOnline probe: reachable=$ok (HTTP $code, latency=${latency}ms, url=$probeUrl)")
-            ok
-        } catch (e: Exception) {
-            val latency = System.currentTimeMillis() - start
-            AppLogger.portal(TAG, "isPortalOnline probe unreachable: ${e.message} (latency=${latency}ms, url=$probeUrl)")
-            false
         }
+
+        val first = attempt(1)
+        if (first) return@withContext true
+
+        delay(300L)
+        attempt(2)
     }
 
     /**
@@ -156,33 +170,51 @@ object PortalApi {
         attempt(2)
     }
 
+    private suspend fun Call.await(): Response = suspendCancellableCoroutine { continuation ->
+        continuation.invokeOnCancellation {
+            cancel()
+        }
+        enqueue(object : Callback {
+            override fun onResponse(call: Call, response: Response) {
+                continuation.resume(response)
+            }
+            override fun onFailure(call: Call, e: IOException) {
+                if (continuation.isCancelled) return
+                continuation.resumeWith(Result.failure(e))
+            }
+        })
+    }
+
     /**
      * Verifies whether real outbound HTTP traffic routes to the internet without captive interception.
      * Returns InternetProbeResult.ONLINE if HTTP 204 No Content is returned,
      * CAPTIVE_PORTAL if HTTP 200..399 is returned (Cyberoam / captive redirect),
      * or FAILED on network/DNS timeout.
+     * Strictly bounded to 2500ms with prompt OkHttp socket cancellation on coroutine timeout.
      */
     suspend fun verifyInternetConnectivity(): InternetProbeResult = withContext(Dispatchers.IO) {
         val start = System.currentTimeMillis()
         try {
-            val request = Request.Builder()
-                .url("http://connectivitycheck.gstatic.com/generate_204")
-                .get()
-                .build()
-            val code = getClient(timeoutMs = 2500, callTimeoutMs = 3000).newCall(request).execute().use { response ->
-                response.code
-            }
-            val latency = System.currentTimeMillis() - start
-            val result = when (code) {
-                204 -> InternetProbeResult.ONLINE
-                in 200..399 -> {
-                    AppLogger.roam(TAG, "verifyInternetConnectivity: Captive portal intercept detected (HTTP $code, latency=${latency}ms)")
-                    InternetProbeResult.CAPTIVE_PORTAL
+            withTimeout(2500L) {
+                val request = Request.Builder()
+                    .url("http://connectivitycheck.gstatic.com/generate_204")
+                    .get()
+                    .build()
+                val response = getClient(timeoutMs = 1500, callTimeoutMs = 2000).newCall(request).await()
+                val code = response.code
+                response.close()
+                val latency = System.currentTimeMillis() - start
+                val result = when (code) {
+                    204 -> InternetProbeResult.ONLINE
+                    in 200..399 -> {
+                        AppLogger.roam(TAG, "verifyInternetConnectivity: Captive portal intercept detected (HTTP $code, latency=${latency}ms)")
+                        InternetProbeResult.CAPTIVE_PORTAL
+                    }
+                    else -> InternetProbeResult.FAILED
                 }
-                else -> InternetProbeResult.FAILED
+                AppLogger.portal(TAG, "verifyInternetConnectivity probe: result=$result (HTTP $code, latency=${latency}ms)")
+                result
             }
-            AppLogger.portal(TAG, "verifyInternetConnectivity probe: result=$result (HTTP $code, latency=${latency}ms)")
-            result
         } catch (e: Exception) {
             val latency = System.currentTimeMillis() - start
             AppLogger.d(TAG, "verifyInternetConnectivity probe error: ${e.message} (latency=${latency}ms)")

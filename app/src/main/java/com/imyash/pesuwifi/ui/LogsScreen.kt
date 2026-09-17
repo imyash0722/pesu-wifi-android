@@ -32,10 +32,14 @@ import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +51,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -55,6 +60,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import com.imyash.pesuwifi.data.BssidDatabase
+import com.imyash.pesuwifi.data.CampusAp
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -90,11 +98,21 @@ fun LogsScreen(
     val context = LocalContext.current
     val allLogs by AppLogger.logsFlow.collectAsState()
     val telemetry by WifiKeepaliveService.telemetryFlow.collectAsState()
+    val campusAps by BssidDatabase.campusApsFlow.collectAsState()
     val listState = rememberLazyListState()
 
     var selectedCategory by remember { mutableStateOf(LogCategory.ALL) }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
+
+    var showTagDialog by remember { mutableStateOf(false) }
+    var tagDialogBssid by remember { mutableStateOf("") }
+    var tagDialogText by remember { mutableStateOf("") }
+    var showApListDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        BssidDatabase.init(context)
+    }
 
     val filteredLogs = remember(allLogs, selectedCategory, searchQuery) {
         allLogs.asReversed().filter { entry ->
@@ -228,8 +246,32 @@ fun LogsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Live Wi-Fi Telemetry Bar
-            LiveTelemetryCard(telemetry = telemetry)
+            // Live Wi-Fi Telemetry Bar & Campus AP Hub
+            LiveTelemetryCard(
+                telemetry = telemetry,
+                campusAps = campusAps,
+                onTriggerScan = {
+                    val ok = WifiKeepaliveService.triggerManualScan(context)
+                    val msg = if (ok) "Scanning for campus APs..." else "Scan throttled by Android (try again shortly)"
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                },
+                onExportDatabase = {
+                    val json = BssidDatabase.exportJson(context)
+                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/json"
+                        putExtra(Intent.EXTRA_TEXT, json)
+                    }
+                    context.startActivity(Intent.createChooser(sendIntent, "Export Campus AP Database"))
+                },
+                onOpenTagDialog = { bssid, currentTag ->
+                    tagDialogBssid = bssid
+                    tagDialogText = currentTag
+                    showTagDialog = true
+                },
+                onOpenApList = {
+                    showApListDialog = true
+                }
+            )
 
             AnimatedVisibility(visible = showSearch) {
                 OutlinedTextField(
@@ -342,11 +384,176 @@ fun LogsScreen(
                 }
             }
         }
+
+        if (showTagDialog) {
+            AlertDialog(
+                onDismissRequest = { showTagDialog = false },
+                title = { Text("Label Campus AP", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text(
+                            text = "Router BSSID:",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = tagDialogBssid,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = tagDialogText,
+                            onValueChange = { tagDialogText = it },
+                            label = { Text("Room / Location Tag") },
+                            placeholder = { Text("e.g. GJBC 4th Floor Classroom 402") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            BssidDatabase.setTag(context, tagDialogBssid, tagDialogText.trim())
+                            showTagDialog = false
+                            Toast.makeText(context, "Location tag saved", Toast.LENGTH_SHORT).show()
+                        }
+                    ) {
+                        Text("Save")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showTagDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showApListDialog) {
+            AlertDialog(
+                onDismissRequest = { showApListDialog = false },
+                title = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Mapped APs (${campusAps.size})", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        IconButton(
+                            onClick = {
+                                val json = BssidDatabase.exportJson(context)
+                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "application/json"
+                                    putExtra(Intent.EXTRA_TEXT, json)
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "Export Campus AP Database"))
+                            }
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = "Export JSON")
+                        }
+                    }
+                },
+                text = {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(380.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(campusAps, key = { it.bssid }) { ap ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = ap.bssid,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        )
+                                        Text(
+                                            text = "${ap.band} ${if (ap.channel > 0) "Ch ${ap.channel}" else ""}".trim(),
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                    if (!ap.tag.isNullOrBlank()) {
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "🏷️ ${ap.tag}",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = StatusGreen
+                                        )
+                                    }
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = if (ap.gateway != null) "GW: ${ap.gateway}" else "SSID: ${ap.ssid}",
+                                            fontSize = 10.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = "Edit Tag",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.clickable {
+                                                tagDialogBssid = ap.bssid
+                                                tagDialogText = ap.tag ?: ""
+                                                showTagDialog = true
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showApListDialog = false }) {
+                        Text("Close")
+                    }
+                }
+            )
+        }
     }
 }
 
 @Composable
-fun LiveTelemetryCard(telemetry: WifiTelemetry) {
+fun LiveTelemetryCard(
+    telemetry: WifiTelemetry,
+    campusAps: List<CampusAp>,
+    onTriggerScan: () -> Unit,
+    onExportDatabase: () -> Unit,
+    onOpenTagDialog: (bssid: String, currentTag: String) -> Unit,
+    onOpenApList: () -> Unit
+) {
+    val currentAp = remember(campusAps, telemetry.bssid) {
+        if (!telemetry.bssid.isNullOrBlank()) {
+            campusAps.find { it.bssid.equals(telemetry.bssid, ignoreCase = true) }
+        } else null
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -454,6 +661,118 @@ fun LiveTelemetryCard(telemetry: WifiTelemetry) {
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+
+            if (currentAp?.tag != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable {
+                        onOpenTagDialog(telemetry.bssid ?: "", currentAp.tag ?: "")
+                    }
+                ) {
+                    Text(
+                        text = "🏷️ ${currentAp.tag}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = StatusGreen
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit Tag",
+                        tint = StatusGreen,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Campus AP Database Bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { onOpenApList() }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Place,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Mapped APs: ",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "${campusAps.size}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = " (view list)",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (telemetry.bssid != null && telemetry.bssid != "02:00:00:00:00:00" && currentAp?.tag == null) {
+                        Text(
+                            text = "🏷️ Label AP",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = StatusGreen,
+                            modifier = Modifier
+                                .clickable {
+                                    onOpenTagDialog(telemetry.bssid, "")
+                                }
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onTriggerScan,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Scan APs",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onExportDatabase,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Export APs",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
         }

@@ -102,6 +102,7 @@ class WifiKeepaliveService : Service() {
         super.onCreate()
         AppLogger.i(TAG, "WifiKeepaliveService onCreate")
         activeInstance = this
+        BssidDatabase.init(this)
         portalRepository = PortalRepository.getInstance(this)
         accountRepository = AccountRepository.getInstance(this)
         connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -300,9 +301,19 @@ class WifiKeepaliveService : Service() {
 
     private fun startInForeground() {
         val status = portalRepository.statusFlow.value
+        val title = when {
+            status.isLoggedIn -> "PESU WiFi: Active"
+            status.isWifiConnected -> "PESU WiFi Keepalive Active"
+            else -> "PESU WiFi: Disconnected"
+        }
+        val content = when {
+            status.isLoggedIn -> "Logged in as ${status.activeUsername ?: "active"}"
+            status.isWifiConnected -> "Monitoring network status..."
+            else -> "Waiting for Wi-Fi connection..."
+        }
         val notification = buildNotification(
-            title = "PESU WiFi Keepalive Active",
-            content = "Monitoring network status...",
+            title = title,
+            content = content,
             isLoggedIn = status.isLoggedIn,
             isWifiConnected = status.isWifiConnected
         )
@@ -323,16 +334,22 @@ class WifiKeepaliveService : Service() {
         } else {
             startForeground(PesuWifiApp.NOTIFICATION_ID, notification)
         }
+
+        serviceScope.launch {
+            updateForegroundNotification()
+        }
     }
 
     private fun isCampusNetworkActive(): Boolean {
+        // If SSID is known and not a campus SSID, it is definitively external
+        if (lastSsid != null && !portalRepository.isCampusSsid(lastSsid)) {
+            return false
+        }
         val status = portalRepository.statusFlow.value
         if (status.isPesuWifi) return true
         if (portalRepository.isCampusNetwork(activeWifiNetwork)) return true
-        if (wasCampusNetwork) return true
         if (lastSsid?.contains("PESU", ignoreCase = true) == true) return true
-        if (lastIpAddresses.any { it.startsWith("10.") || it.startsWith("172.16.") || it.startsWith("172.17.") }) return true
-        if (lastGateway?.startsWith("10.") == true || lastGateway?.startsWith("192.168.254.") == true) return true
+        if (wasCampusNetwork && status.isWifiConnected) return true
         return false
     }
 
@@ -359,6 +376,7 @@ class WifiKeepaliveService : Service() {
                     authBackoffUntilTimestamp = 0L
                     AppLogger.d(TAG, "Keepalive check OK: Logged in as ${status.activeUsername} (latency ${status.latencyMs}ms)")
                     reportConnectivityValidated()
+                    logScanResults(false)
                 } else {
                     if (isAuthBackoffActive) {
                         val remainingSec = ((authBackoffUntilTimestamp - SystemClock.elapsedRealtime()) / 1000).coerceAtLeast(1)
@@ -417,6 +435,7 @@ class WifiKeepaliveService : Service() {
                         loopJob = null
                         AppLogger.i(TAG, "External Wi-Fi detected ($lastSsid). Keepalive entered dormant mode.")
                     }
+                    updateForegroundNotification()
                 }
             }
         } catch (e: Exception) {
@@ -552,11 +571,16 @@ class WifiKeepaliveService : Service() {
                 val ch = frequencyToChannel(ap.frequency)
                 AppLogger.wifi(TAG, "  -> Campus AP: BSSID=${ap.BSSID}, SSID=\"${ap.SSID}\", RSSI=${ap.level} dBm, Freq=${ap.frequency} MHz (Ch $ch), Caps=${ap.capabilities}")
             }
-            // In stable build: record every visible campus BSSID to build a campus AP database
-            if (!BuildConfig.ENABLE_UNIVERSAL_LOGS) {
-                for (ap in campusResults) {
-                    BssidDatabase.record(applicationContext, ap.BSSID)
-                }
+            // Record every visible campus AP to build the campus database across all builds
+            for (ap in campusResults) {
+                BssidDatabase.record(
+                    context = applicationContext,
+                    bssid = ap.BSSID,
+                    ssid = ap.SSID,
+                    frequency = ap.frequency,
+                    level = ap.level,
+                    gateway = lastGateway
+                )
             }
         } catch (e: Exception) {
             AppLogger.w(TAG, "Failed reading scan results: ${e.message}")
@@ -650,8 +674,14 @@ class WifiKeepaliveService : Service() {
         val iface = lp?.interfaceName
         val ips = lp?.linkAddresses?.map { it.address.hostAddress }
 
-        AppLogger.wifi(TAG, "[onAvailable] Wi-Fi network connected: $network (handle=${network.networkHandle}, iface=$iface, IPs=$ips)")
+        val detectedSsid = portalRepository.getCurrentWifiSsid(network)
+        if (!detectedSsid.isNullOrBlank()) {
+            lastSsid = detectedSsid
+        }
+
+        AppLogger.wifi(TAG, "[onAvailable] Wi-Fi network connected: $network (handle=${network.networkHandle}, iface=$iface, IPs=$ips, SSID=$lastSsid)")
         AppLogger.wifi(TAG, "  -> Capabilities: $caps")
+        logScanResults(false)
 
         // Debounce rapid AP transitions
         reconnectJob?.cancel()
@@ -673,9 +703,16 @@ class WifiKeepaliveService : Service() {
                             consecutiveFailureCount = 0
                             authBackoffUntilTimestamp = 0L
                             reportConnectivityValidated()
-                            // Record the connected BSSID in stable build
-                            if (!BuildConfig.ENABLE_UNIVERSAL_LOGS && lastBssid != null) {
-                                BssidDatabase.record(applicationContext, lastBssid!!)
+                            // Record the connected BSSID in all builds
+                            if (lastBssid != null) {
+                                BssidDatabase.record(
+                                    context = applicationContext,
+                                    bssid = lastBssid!!,
+                                    ssid = lastSsid ?: "PESU-EC-Campus",
+                                    frequency = if (lastFrequency > 0) lastFrequency else null,
+                                    level = if (lastRssi > -120) lastRssi else null,
+                                    gateway = lastGateway
+                                )
                             }
                         } else {
                             val err = result.exceptionOrNull()?.message ?: ""
@@ -698,6 +735,7 @@ class WifiKeepaliveService : Service() {
                 AppLogger.i(TAG, "External network confirmed: entering non-interference standby")
                 releaseLocks()
                 cancelHeartbeat()
+                updateForegroundNotification()
             }
         }
     }
@@ -734,14 +772,18 @@ class WifiKeepaliveService : Service() {
         if (bssidChanged) {
             AppLogger.roam(TAG, "AP ROAM DETECTED: Physical router changed! BSSID '$lastBssid' -> '$currentBssid' (SSID: '$currentSsid', RSSI: ${currentRssi}dBm, Ch: ${frequencyToChannel(currentFreq)})")
             lastBssid = currentBssid
-            lastSsid = currentSsid
+            if (!currentSsid.isNullOrBlank()) {
+                lastSsid = currentSsid
+            }
             lastRssi = currentRssi
             lastFrequency = currentFreq
             updateTelemetry()
             handleRoamingEvent(network)
         } else {
             if (currentBssid != null) lastBssid = currentBssid
-            if (currentSsid != null) lastSsid = currentSsid
+            if (!currentSsid.isNullOrBlank()) {
+                lastSsid = currentSsid
+            }
             lastRssi = currentRssi
             lastFrequency = currentFreq
             updateTelemetry()
@@ -749,6 +791,17 @@ class WifiKeepaliveService : Service() {
                 AppLogger.roam(TAG, "Captive portal flag active on network $network: triggering roam re-auth check")
                 handleRoamingEvent(network)
             }
+        }
+
+        if (currentBssid != null && (wasCampusNetwork || isCampusNetworkActive() || currentSsid?.contains("PESU", ignoreCase = true) == true)) {
+            BssidDatabase.record(
+                context = applicationContext,
+                bssid = currentBssid,
+                ssid = currentSsid ?: lastSsid ?: "PESU-EC-Campus",
+                frequency = if (currentFreq > 0) currentFreq else null,
+                level = if (currentRssi > -120) currentRssi else null,
+                gateway = lastGateway
+            )
         }
     }
 
@@ -779,11 +832,11 @@ class WifiKeepaliveService : Service() {
             updateTelemetry()
         }
 
-        // Zero-Latency Fast Re-Auth:
-        // As soon as link properties receive an IPv4 address on campus Wi-Fi (10.* IP or campus SSID),
-        // authenticate immediately without waiting for debounce delays so Android's captive portal probe
-        // receives a valid 204 response and avoids adding the AP BSSID to WifiBlocklistMonitor.
-        val isCampus = isCampusIp || wasCampusNetwork || lastSsid?.contains("PESU", ignoreCase = true) == true
+        val isCampus = if (lastSsid != null) {
+            portalRepository.isCampusSsid(lastSsid)
+        } else {
+            portalRepository.isCampusNetwork(network)
+        }
         if (hasIpv4 && isCampus && !isAuthBackoffActive) {
             val validIpv4 = currentIps.firstOrNull { it.contains(".") && !it.startsWith("127.") } ?: ""
             triggerFastReauth(network, validIpv4)
@@ -959,22 +1012,33 @@ class WifiKeepaliveService : Service() {
 
     private suspend fun updateForegroundNotification() {
         val status = portalRepository.statusFlow.value
-        val isRoamingReconnecting = autoReconnectWatchdogJob?.isActive == true
+        val isCampus = status.isPesuWifi || isCampusNetworkActive()
+        val isWatchdogSearching = autoReconnectWatchdogJob?.isActive == true
+        val isRoamingHandoff = isCampus && !status.isPortalOnline && status.isWifiConnected
+        val isRoamingReconnecting = isWatchdogSearching || isRoamingHandoff
+        val isExternalWifi = status.isWifiConnected && !isCampus
 
         val title = when {
             isRoamingReconnecting -> "PESU WiFi: Roaming..."
+            isExternalWifi -> "PESU WiFi: Paused"
             isAuthBackoffActive -> "PESU WiFi: Login Paused"
             !status.isWifiConnected -> "PESU WiFi: Disconnected"
-            !status.isPesuWifi -> "PESU WiFi: Paused"
             status.isLoggedIn -> "PESU WiFi: Active"
             else -> "PESU WiFi: Logged Out"
         }
 
+        val externalContent = if (!lastSsid.isNullOrBlank()) {
+            "Connected to external Wi-Fi ($lastSsid). Auto-resumes on campus."
+        } else {
+            "Connected to external Wi-Fi. Auto-resumes on campus."
+        }
+
         val content = when {
-            isRoamingReconnecting -> "Searching for nearby access point..."
+            isWatchdogSearching -> "Searching for nearby access point..."
+            isRoamingHandoff -> "Switching access point..."
+            isExternalWifi -> externalContent
             isAuthBackoffActive -> "Temporary login pause. Retrying shortly..."
             !status.isWifiConnected -> "Waiting for Wi-Fi connection..."
-            !status.isPesuWifi -> "Connected to external Wi-Fi. Auto-resumes on campus."
             status.isLoggedIn -> "Logged in as ${status.activeUsername ?: "active"}"
             else -> "Session inactive on PESU Wi-Fi. Tap to login."
         }
@@ -1131,6 +1195,28 @@ class WifiKeepaliveService : Service() {
                 action = ACTION_STOP
             }
             context.startService(intent)
+        }
+
+        fun triggerManualScan(context: Context): Boolean {
+            val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            val service = activeInstance
+            return try {
+                @Suppress("DEPRECATION")
+                val ok = wm?.startScan() ?: false
+                if (ok) {
+                    AppLogger.d(TAG, "Manual Wi-Fi scan triggered successfully")
+                } else {
+                    AppLogger.w(TAG, "Manual Wi-Fi scan was throttled or rejected by system")
+                }
+                service?.serviceScope?.launch {
+                    delay(1500L)
+                    service.logScanResults(true)
+                }
+                ok
+            } catch (e: Exception) {
+                AppLogger.w(TAG, "Failed to trigger manual scan: ${e.message}")
+                false
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - 'beta-v*'
   workflow_dispatch:
 
 permissions:
@@ -34,7 +35,7 @@ jobs:
       - name: Package Release APKs
         run: |
           mkdir -p release-apk
-          TAG_NAME="${GITHUB_REF_NAME:-v1.4.6}"
+          TAG_NAME="${GITHUB_REF_NAME:-beta-v1.5.0}"
           cp app/build/outputs/apk/stable/release/app-stable-release.apk "release-apk/pesu-wifi-${TAG_NAME}-stable.apk"
           cp app/build/outputs/apk/beta/release/app-beta-release.apk "release-apk/pesu-wifi-${TAG_NAME}-tester.apk"
 
@@ -43,4 +44,5 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: release-apk/*.apk
+          prerelease: ${{ contains(github.ref, 'beta') }}
           generate_release_notes: true

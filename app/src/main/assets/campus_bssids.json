@@ -1,0 +1,92 @@
+[
+  {
+    "bssid": "c8:a6:08:b8:14:90",
+    "ssid": "PESU-EC-Campus",
+    "band": "5GHz",
+    "channel": 64,
+    "gateway": "10.1.0.1",
+    "tag": "GJBC Classroom (Connected AP)",
+    "lastSeen": 1757999000000
+  },
+  {
+    "bssid": "c8:a6:08:78:14:90",
+    "ssid": "PESU-EC-Campus",
+    "band": "2.4GHz",
+    "channel": 9,
+    "gateway": "10.1.0.1",
+    "tag": "GJBC Classroom (2.4G Pair)",
+    "lastSeen": 1757999000000
+  },
+  {
+    "bssid": "c8:a6:08:91:f8:90",
+    "ssid": "PESU-EC-Campus",
+    "band": "5GHz",
+    "channel": 64,
+    "gateway": "10.1.0.1",
+    "tag": "GJBC Adjacent Room (5G)",
+    "lastSeen": 1757999000000
+  },
+  {
+    "bssid": "c8:a6:08:51:f8:90",
+    "ssid": "PESU-EC-Campus",
+    "band": "2.4GHz",
+    "channel": 9,
+    "gateway": "10.1.0.1",
+    "tag": "GJBC Adjacent Room (2.4G)",
+    "lastSeen": 1757999000000
+  },
+  {
+    "bssid": "c8:a6:08:92:1c:10",
+    "ssid": "PESU-EC-Campus",
+    "band": "5GHz",
+    "channel": 100,
+    "gateway": "10.1.0.1",
+    "tag": "GJBC Corridor AP (5G)",
+    "lastSeen": 1757999000000
+  },
+  {
+    "bssid": "c8:a6:08:52:1c:10",
+    "ssid": "PESU-EC-Campus",
+    "band": "2.4GHz",
+    "channel": 4,
+    "gateway": "10.1.0.1",
+    "tag": "GJBC Corridor AP (2.4G)",
+    "lastSeen": 1757999000000
+  },
+  {
+    "bssid": "c8:a6:08:52:17:60",
+    "ssid": "PESU-EC-Campus",
+    "band": "2.4GHz",
+    "channel": 3,
+    "gateway": "10.1.0.1",
+    "tag": "GJBC Wing AP (2.4G)",
+    "lastSeen": 1757999000000
+  },
+  {
+    "bssid": "c8:a6:08:92:17:60",
+    "ssid": "PESU-EC-Campus",
+    "band": "5GHz",
+    "channel": 0,
+    "gateway": "10.1.0.1",
+    "tag": "GJBC Wing AP (5G Pair)",
+    "lastSeen": 1757999000000
+  },
+  {
+    "bssid": "c8:a6:08:95:ab:90",
+    "ssid": "PESU-EC-Campus",
+    "band": "5GHz",
+    "channel": 108,
+    "gateway": "10.1.0.1",
+    "tag": "GJBC East AP (5G)",
+    "lastSeen": 1757999000000
+  },
+  {
+    "bssid": "c8:a6:08:55:ab:90",
+    "ssid": "PESU-EC-Campus",
+    "band": "2.4GHz",
+    "channel": 0,
+    "gateway": "10.1.0.1",
+    "tag": "GJBC East AP (2.4G Pair)",
+    "lastSeen": 1757999000000
+  }
+]

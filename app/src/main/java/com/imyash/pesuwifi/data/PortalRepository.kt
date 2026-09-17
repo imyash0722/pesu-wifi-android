@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.os.SystemClock
 import com.imyash.pesuwifi.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +37,13 @@ class PortalRepository(
     val statusFlow: StateFlow<PortalStatus> = _statusFlow.asStateFlow()
 
     private var consecutiveProbeFailures = 0
+
+    @Volatile
+    private var lastConfirmedCampusNetwork: Network? = null
+    @Volatile
+    private var lastConfirmedCampusSsid: String? = null
+    @Volatile
+    private var lastConfirmedCampusTime: Long = 0L
 
     fun getWifiLocalAddress(wifiNet: Network? = null): InetAddress? {
         val net = wifiNet ?: getWifiNetwork() ?: return null
@@ -77,7 +85,8 @@ class PortalRepository(
                 val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
                 wm?.connectionInfo?.ssid?.takeIf { it != "<unknown ssid>" }
             }
-        return ssid?.replace("\"", "")?.trim()
+        val clean = ssid?.replace("\"", "")?.trim()
+        return clean?.takeIf { it.isNotEmpty() && it != "<unknown ssid>" }
     }
 
     fun getCurrentWifiBssid(wifiNet: Network? = null): String? {
@@ -102,49 +111,85 @@ class PortalRepository(
 
     fun isCampusSsid(ssid: String?): Boolean {
         if (ssid.isNullOrBlank()) return false
-        return ssid.contains("PESU", ignoreCase = true)
+        val clean = ssid.replace("\"", "").trim()
+        return clean.contains("PESU", ignoreCase = true)
     }
 
     /**
      * Determines whether the given (or active) Wi-Fi network is the PESU campus network.
-     * Checks multiple signals to avoid false negatives when Android 12 suppresses SSID:
-     * 1. SSID contains "PESU"
-     * 2. IPv4 address is in campus private ranges (10.0.0.0/8 or 172.16.0.0/12)
-     * 3. Default gateway is in campus subnet (10.* or 192.168.254.*)
-     * 4. DNS servers include campus nameservers (192.168.3.2)
-     * 5. Sticky session preservation: if previously confirmed as campus Wi-Fi on active connection
+     * 1. If SSID is known, it is the authoritative source of truth (must contain "PESU").
+     * 2. If SSID is redacted/unknown (e.g. during AP roaming handoffs or Android 12 location policy),
+     *    check if this active connection was recently verified as campus Wi-Fi.
+     * 3. If SSID is redacted and no recent cache, check campus-specific network infrastructure:
+     *    Cyberoam gateway (192.168.254.*) or PESU internal DNS (192.168.3.2).
      */
     fun isCampusNetwork(wifiNet: Network? = null): Boolean {
         val net = wifiNet ?: getWifiNetwork() ?: return false
 
-        // 1. Check SSID if available
+        // 1. Check SSID if available: if known, it is the definitive indicator
         val ssid = getCurrentWifiSsid(net)
-        if (isCampusSsid(ssid)) return true
+        if (!ssid.isNullOrBlank()) {
+            val isCampus = isCampusSsid(ssid)
+            if (isCampus) {
+                lastConfirmedCampusNetwork = net
+                lastConfirmedCampusSsid = ssid
+                lastConfirmedCampusTime = SystemClock.elapsedRealtime()
+                return true
+            } else {
+                // Definitive non-campus SSID (home, personal hotspot, etc.)
+                lastConfirmedCampusNetwork = null
+                lastConfirmedCampusSsid = null
+                lastConfirmedCampusTime = 0L
+                return false
+            }
+        }
 
-        // 2. Check LinkProperties for campus IP subnets & routes
+        // 1b. Check BSSID against campus AP database: 0ms recognition if router MAC is known
+        val now = SystemClock.elapsedRealtime()
+        val bssid = getCurrentWifiBssid(net)
+        if (!bssid.isNullOrBlank() && BssidDatabase.isCampusBssid(context, bssid)) {
+            lastConfirmedCampusNetwork = net
+            if (ssid != null) lastConfirmedCampusSsid = ssid
+            lastConfirmedCampusTime = now
+            AppLogger.d("PortalRepository", "isCampusNetwork: BSSID $bssid matched campus AP database. Instant campus recognition.")
+            return true
+        }
+
+        // 2. If SSID is redacted/unknown, check if recently confirmed on campus.
+        // During roaming between campus APs, the SSID is momentarily null, but the device
+        // remains continuously connected on campus.
+        if (lastConfirmedCampusTime > 0L && (now - lastConfirmedCampusTime) < 120_000L) {
+            if (lastConfirmedCampusNetwork == null || lastConfirmedCampusNetwork == net) {
+                AppLogger.d("PortalRepository", "isCampusNetwork: SSID is null/redacted, but connection was confirmed campus ${(now - lastConfirmedCampusTime) / 1000}s ago (roaming handoff). Preserving campus status.")
+                return true
+            }
+        }
+
+        // 3. Only if SSID is redacted/unknown and no recent confirmation, check campus-specific network infrastructure
         val lp = connectivityManager?.getLinkProperties(net)
         if (lp != null) {
-            val ips = lp.linkAddresses.mapNotNull { it.address.hostAddress }
-            val isCampusIp = ips.any { it.startsWith("10.") || it.startsWith("172.16.") || it.startsWith("172.17.") }
-            if (isCampusIp) return true
-
             val gw = lp.routes.firstOrNull { it.isDefaultRoute }?.gateway?.hostAddress
-            if (gw != null && (gw.startsWith("10.") || gw.startsWith("192.168.254.") || gw.startsWith("172."))) {
+            if (gw != null && gw.startsWith("192.168.254.")) {
+                lastConfirmedCampusNetwork = net
+                lastConfirmedCampusTime = now
                 return true
             }
 
             val dns = lp.dnsServers.mapNotNull { it.hostAddress }
-            if (dns.any { it == "192.168.3.2" || it.startsWith("10.") }) {
+            if (dns.contains("192.168.3.2")) {
+                lastConfirmedCampusNetwork = net
+                lastConfirmedCampusTime = now
                 return true
             }
         }
 
-        // 3. Sticky campus preservation: do not demote to external if previously confirmed on this Wi-Fi
-        if (_statusFlow.value.isWifiConnected && _statusFlow.value.isPesuWifi) {
-            return true
-        }
-
         return false
+    }
+
+    fun clearCampusCache() {
+        lastConfirmedCampusNetwork = null
+        lastConfirmedCampusSsid = null
+        lastConfirmedCampusTime = 0L
     }
 
     suspend fun refreshStatus(): PortalStatus = withContext(Dispatchers.IO) {
@@ -176,6 +221,14 @@ class PortalRepository(
         val start = System.currentTimeMillis()
         val portalUp = api.isPortalOnline()
         val latency = System.currentTimeMillis() - start
+
+        if (portalUp) {
+            lastConfirmedCampusNetwork = wifiNet
+            if (!currentSsid.isNullOrBlank()) {
+                lastConfirmedCampusSsid = currentSsid
+            }
+            lastConfirmedCampusTime = SystemClock.elapsedRealtime()
+        }
 
         if (!portalUp) {
             if (isCampus) {
@@ -232,13 +285,10 @@ class PortalRepository(
                     }
                 }
                 PortalApi.InternetProbeResult.FAILED -> {
-                    consecutiveProbeFailures++
-                    if (consecutiveProbeFailures >= 3) {
-                        AppLogger.roam("PortalRepository", "Internet probe failed 3 consecutive times. Invalidating session state to force re-auth.")
-                        loggedIn = false
-                    } else {
-                        AppLogger.d("PortalRepository", "Internet probe timed out/failed ($consecutiveProbeFailures/3), keeping session active as Cyberoam confirmed live")
-                    }
+                    // Do NOT invalidate loggedIn when probe times out or DNS has brief glitches!
+                    // Cyberoam explicitly confirmed the session is active (ack="ack").
+                    // Only an actual captive portal redirect (CAPTIVE_PORTAL) indicates a zombie session.
+                    AppLogger.d("PortalRepository", "Internet probe timed out/unreachable, but Cyberoam confirmed session is live. Preserving loggedIn=true.")
                 }
             }
         } else {

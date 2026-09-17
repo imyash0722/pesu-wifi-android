@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [beta-v1.5.0 — Campus AP Scale & Autonomous BSSID Harvesting](#beta-v150--campus-ap-scale--autonomous-bssid-harvesting)
+  - [Overview & Major Highlights](#beta-v150-overview--major-highlights)
 - [v1.4.6 — Classroom Wi-Fi Stability, Tailscale Socket Resiliency & UI Polish](#v146--classroom-wi-fi-stability-tailscale-socket-resiliency--ui-polish)
   - [Overview & Major Highlights](#v146-overview--major-highlights)
 - [v1.4.5 — Material You Redesign, Dual Flavors (Stable & Tester), BSSID Cataloging & Back Navigation](#v145--material-you-redesign-dual-flavors-stable--tester-bssid-cataloging--back-navigation)
@@ -27,6 +29,29 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## beta-v1.5.0 — Campus AP Scale & Autonomous BSSID Harvesting
+
+**Release Date:** September 17, 2026  
+**Git Tag:** [`beta-v1.5.0`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/beta-v1.5.0)  
+**Release Type:** Pre-Release (Beta)  
+**APK Assets:**  
+- `pesu-wifi-beta-v1.5.0-stable.apk` (Production / Stable track with pre-seeded campus AP catalog)  
+- `pesu-wifi-beta-v1.5.0-tester.apk` (Tester track with full diagnostic logs, telemetry & AP explorer)  
+
+### beta-v1.5.0 Overview & Major Highlights
+- **📡 Two-Tier Campus AP Database (`BssidDatabase`)**: Implemented a rich two-tier storage system designed to scale across the entire PES University campus (7 floors, 56+ classrooms, seminar halls, labs, food court, and library). Combines a static bundled baseline (`assets/campus_bssids.json`) with an auto-updating persistent local database in `SharedPreferences` and an in-memory `ConcurrentHashMap` for zero-latency lookups.
+- **⚡ Layer-1 Zero-Latency Campus Recognition (`isCampusNetwork`)**: Added instantaneous $O(1)$ BSSID matching before roaming fallbacks. The moment the Wi-Fi radio associates with any mapped Cisco router MAC, the network is validated as campus Wi-Fi in 0 ms, even if Android 12 temporarily redacts the network SSID.
+- **🔄 Cisco Enterprise Dual-Band Twin Synthesis**: Cisco enterprise APs (Aironet/Catalyst) flip bit 6 (`0x40`) on the 4th octet between 2.4 GHz and 5 GHz radios. Detecting one radio automatically derives and registers its opposite-band twin into the database, doubling mapping speed without extra scans.
+- **🚶 Autonomous Background Harvesting**: Removed universal logging build gates from AP harvesting. The background keepalive service automatically captures, deduplicates, and stores all visible `PESU` APs during Wi-Fi scans, connection events, and periodic 60s heartbeats as students walk around campus.
+- **🏷️ Interactive AP Explorer, Labeling & JSON Export**: Added a live Campus AP map section inside `LogsScreen`:
+  - Live counter: `"Mapped APs: X (view list)"`.
+  - Current router telemetry: BSSID, band (2.4G/5G), channel, RSSI, and subnet gateway.
+  - Room / Floor Tagging Dialog: lets users assign friendly labels (e.g. `"GJBC 4th Floor Classroom 402"`).
+  - 1-Tap Export: invokes Android's system share sheet to export the pretty-printed JSON AP database for community pooling and APK baseline bundling.
+- **🛡️ Roaming Stability & Non-Blocking Async Network Calls**: Replaced blocking OkHttp network execution in `PortalApi` with non-blocking coroutine `Call.await()` and added 120-second sticky campus roaming preservation to eliminate transient "External Wi-Fi" notification flashes during classroom-to-classroom handoffs.
 
 ---
 
