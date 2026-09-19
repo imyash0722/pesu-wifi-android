@@ -34,6 +34,23 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 
 ---
 
+## v1.5.1 — Android 12+ Forward Compatibility, 16 KB Page Alignment & Nearby Wi-Fi Devices
+
+**Release Date:** September 19, 2026  
+**Git Tag:** [`v1.5.1`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.5.1)  
+**Release Type:** Official Release (Stable & Tester Tracks)  
+**APK Assets:**  
+- `pesu-wifi-v1.5.1-stable.apk` (Production / Stable track without debug logging overhead)  
+- `pesu-wifi-v1.5.1-tester.apk` (Tester track with full diagnostic logs, telemetry & AP explorer)  
+
+### v1.5.1 Overview & Major Highlights
+- **🚀 Android 13+ `NEARBY_WIFI_DEVICES` Support**: Declared `android.permission.NEARBY_WIFI_DEVICES` with `android:usesPermissionFlags="neverForLocation"`, enabling seamless Wi-Fi suggestion and connectivity handling on Android 13, 14, and 15 without requiring users to grant GPS/Location permissions.
+- **🧹 Legacy Location Permission Scoping**: Limited `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION` to `maxSdkVersion="32"` (Android 12 and below) and removed intrusive `ACCESS_BACKGROUND_LOCATION`, eliminating security review warnings on modern Android releases.
+- **📦 Android 15 16 KB Page Alignment**: Configured AGP native packaging (`jniLibs { useLegacyPackaging = false }`) to ensure uncompressed libraries are aligned to 16 KB boundaries, satisfying Google Play and kernel requirements for Android 15+.
+- **🔙 Predictive Back Gesture**: Enabled `android:enableOnBackInvokedCallback="true"` for smooth native gesture animations on Android 13, 14, and 15.
+
+---
+
 ## v1.5.0 — Event-Driven OS Rules, 5 Campus SSIDs & Pure Standby Architecture
 
 **Release Date:** September 19, 2026  
