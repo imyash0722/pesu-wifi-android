@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.5.0 — Event-Driven OS Rules, 5 Campus SSIDs & Pure Standby Architecture](#v150--event-driven-os-rules-5-campus-ssids--pure-standby-architecture)
+  - [Overview & Major Highlights](#v150-overview--major-highlights)
 - [beta-v1.5.0 — Campus AP Scale & Autonomous BSSID Harvesting](#beta-v150--campus-ap-scale--autonomous-bssid-harvesting)
   - [Overview & Major Highlights](#beta-v150-overview--major-highlights)
 - [v1.4.6 — Classroom Wi-Fi Stability, Tailscale Socket Resiliency & UI Polish](#v146--classroom-wi-fi-stability-tailscale-socket-resiliency--ui-polish)
@@ -29,6 +31,29 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.5.0 — Event-Driven OS Rules, 5 Campus SSIDs & Pure Standby Architecture
+
+**Release Date:** September 19, 2026  
+**Git Tag:** [`v1.5.0`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.5.0)  
+**Release Type:** Official Release (Stable & Tester Tracks)  
+**APK Assets:**  
+- `pesu-wifi-v1.5.0-stable.apk` (Production / Stable track without debug logging overhead)  
+- `pesu-wifi-v1.5.0-tester.apk` (Tester track with full diagnostic logs, telemetry & AP explorer)  
+
+### v1.5.0 Overview & Major Highlights
+- **⚡ Pure Event-Driven OS Rules Architecture**: Dropped the legacy foreground keepalive daemon (`WifiKeepaliveService`) and 60-second periodic CPU wake alarms (`AlarmManager`). The app now relies 100% on native Android OS primitives (`WifiNetworkSuggestion`, `ConnectivityManager` persistent `PendingIntent`, and persistent `JobScheduler`), achieving zero battery consumption while maintaining instant captive portal auto-login.
+- **🏫 Comprehensive 5 Campus SSIDs Catalog**: Registered all PES University campus SSIDs across WPA2 passphrase and open profiles:
+  - `PESU-EC-Campus`
+  - `PESU-CIE`
+  - `AMAATRA_HOSTEL`
+  - `Foodcourt`
+  - `pes south cafe`
+- **🔄 BSSID Handover Verification & Network-Bound Router Ping**: When moving between access points (BSSID handover), [`RouterPing`](file:///home/pineapple/pesu-wifi-android/app/src/main/java/com/imyash/pesuwifi/util/RouterPing.kt) pings the router gateway directly over the Wi-Fi network interface socket factory to ensure physical link reachability before authenticating.
+- **🛡️ External Wi-Fi Non-Interference Standby**: Connecting to personal hotspots (e.g. `imyk`) or home Wi-Fi automatically switches the app into passive standby mode with zero captive portal requests or interference.
+- **🎯 Streamlined Always-On UI**: Removed redundant "Auto-Connect Rules" and "Background Keepalive" toggles. Auto-connect rules are always active at the OS level upon app launch and device boot.
 
 ---
 

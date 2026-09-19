@@ -3,8 +3,8 @@
 Native Android companion app for PESU captive portal login, session management, and continuous keepalive. Replicates the core logic of the `pesu-wifi` CLI with a clean Material 3 interface and background Foreground Service.
 
 [![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases)
-[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.5.0-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/beta-v1.5.0/pesu-wifi-beta-v1.5.0-stable.apk)
-[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.5.0-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/beta-v1.5.0/pesu-wifi-beta-v1.5.0-tester.apk)
+[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.5.0-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.5.0/pesu-wifi-v1.5.0-stable.apk)
+[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.5.0-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.5.0/pesu-wifi-v1.5.0-tester.apk)
 [![Changelog](https://img.shields.io/badge/Changelog-Release_Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -12,20 +12,16 @@ Native Android companion app for PESU captive portal login, session management, 
 
 ## Features
 
-- **Automated Login & Logout**: 1-tap sign-in and sign-out against the Cyberoam gateway (`http://192.168.254.1:8090`).
-- **Resilient Network Sockets (EPERM Resolution)**: Seamless fallback to standard routing if VPN or system policies prevent physical Wi-Fi interface binding.
-- **Non-Interference Standby Mode**: Automatically pauses keepalive, releases WakeLocks, and cancels wake alarms on home/external Wi-Fi networks; automatically resumes when you reconnect to campus Wi-Fi.
-- **In-App Diagnostic Logs**: Live timestamped log viewer with level filtering, keyword search, 1-tap copy, and Android system export sheet.
-- **First-Launch Background Permission Onboarding**: Interactive first-run dialog requesting unrestricted battery optimization, notifications, and alarms so keepalive works out of the box.
-- **Universal Multi-Vendor Android Support**: Multi-OEM autostart resolver supporting Xiaomi (HyperOS/MIUI), Samsung (OneUI), Oppo/Realme/OnePlus (ColorOS), Vivo/iQOO, Huawei/Honor, Asus, and Transsion. Hides autostart settings cleanly on pure stock Android (Google Pixel, Motorola).
-- **Screen-Off Keepalive (Continuous WakeLock & WifiLock)**: Holds non-reference-counted `PARTIAL_WAKE_LOCK` and low-latency `WifiLock` to prevent CPU sleep and Wi-Fi radio sleep when device is locked.
-- **Exact RTC Watchdog Heartbeat**: Dual-redundant `AlarmManager.setExactAndAllowWhileIdle` ticking every 60s to wake the device even through deep Doze.
-- **Captive Portal Validation & Mobile Data Bypass**: Explicitly binds network calls to the Wi-Fi `SocketFactory` to bypass cellular fallback, and calls `reportNetworkConnectivity(true)` to dismiss Android's "Sign in to network" banner.
-- **Interactive Permissions System**: Visual setup cards and dialogs for Notifications, Battery Optimization, and Exact Alarms.
+- **Pure Event-Driven OS Rules**: Zero-battery background architecture using native Android `WifiNetworkSuggestion`, persistent `ConnectivityManager` `PendingIntent`, and persistent `JobScheduler`.
+- **5 Campus SSIDs Supported**: Pre-configured with `PESU-EC-Campus`, `PESU-CIE`, `AMAATRA_HOSTEL`, `Foodcourt`, and `pes south cafe`.
+- **Automated Login & Logout**: Instant auto-authentication against the Cyberoam gateway (`http://192.168.254.1:8090`).
+- **BSSID Handover Verification**: Automatically verifies link reachability with network-bound router gateway pings on access point handovers.
+- **Non-Interference Standby Mode**: Automatically pauses when connected to external/home Wi-Fi networks (e.g. `imyk`); instantly resumes when re-entering campus network range.
+- **In-App Diagnostic Logs & AP Explorer**: Live timestamped log viewer with level filtering, keyword search, AP mapper, and Android system export sheet.
+- **Captive Portal Validation & Mobile Data Bypass**: Explicitly binds network calls to the Wi-Fi `SocketFactory` to bypass cellular fallback, and calls `reportNetworkConnectivity(true)` to dismiss Android's captive portal notification.
 - **Quick Settings Tile**: Add the **PESU WiFi** tile to your notification pull-down shade for instant 1-tap toggle.
 - **Hardware-Backed Credential Storage**: Encrypted with Android Jetpack `EncryptedSharedPreferences` (AES-256).
 - **Multi-Account Switching**: Store multiple student/faculty accounts and easily switch active users with a single tap.
-- **Desktop JSON Import/Export**: Directly paste or export `config.json` compatible with the desktop `pesu-wifi` CLI.
 
 ---
 
@@ -35,8 +31,7 @@ Native Android companion app for PESU captive portal login, session management, 
 - **UI Toolkit**: Jetpack Compose + Material 3
 - **Network Engine**: OkHttp 4.12 (direct Wi-Fi `SocketFactory` binding, `Proxy.NO_PROXY`, zero-idle pool)
 - **Security**: AndroidX Security Crypto (`MasterKey` AES-256-GCM / AES-256-SIV)
-- **Background Engine**: Android Foreground Service (`dataSync` type, Android 14 compliant)
-- **WakeLock & Watchdog**: `PowerManager.PARTIAL_WAKE_LOCK`, `WifiManager.WifiLock`, `AlarmManager` exact RTC alarms
+- **Background Engine**: Pure Event-Driven OS Rules (`WifiNetworkSuggestion`, `ConnectivityManager` persistent `PendingIntent`, `JobScheduler`)
 - **Quick Settings**: Android `TileService`
 
 ---
