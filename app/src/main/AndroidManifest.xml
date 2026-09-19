@@ -71,6 +71,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".service.CampusHeartbeatReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.imyash.pesuwifi.ACTION_CAMPUS_HEARTBEAT" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".service.WifiWakeupJobService"
             android:permission="android.permission.BIND_JOB_SERVICE"

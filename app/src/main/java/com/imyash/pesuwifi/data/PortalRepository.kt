@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.SystemClock
+import com.imyash.pesuwifi.service.CampusHeartbeatScheduler
 import com.imyash.pesuwifi.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -269,6 +270,7 @@ class PortalRepository(
             )
             _statusFlow.value = status
             updateTelemetry()
+            CampusHeartbeatScheduler.stopHeartbeat(context)
             AppLogger.d("PortalRepository", "refreshStatus: Wi-Fi is not connected")
             return@withContext status
         }
@@ -319,6 +321,7 @@ class PortalRepository(
                 )
                 _statusFlow.value = status
                 updateTelemetry()
+                CampusHeartbeatScheduler.stopHeartbeat(context)
                 AppLogger.i("PortalRepository", "refreshStatus: Connected to external Wi-Fi '$currentSsid' (gateway probe timed out)")
                 return@withContext status
             }
@@ -373,6 +376,11 @@ class PortalRepository(
         )
         _statusFlow.value = status
         updateTelemetry()
+        if (loggedIn) {
+            CampusHeartbeatScheduler.startHeartbeat(context)
+        } else {
+            CampusHeartbeatScheduler.stopHeartbeat(context)
+        }
         AppLogger.i("PortalRepository", "refreshStatus: PESU Wi-Fi active (loggedIn=$loggedIn, latency=${latency}ms)")
         status
     }
@@ -403,12 +411,14 @@ class PortalRepository(
                     // Ignore security or OEM restrictions
                 }
             }
+            CampusHeartbeatScheduler.startHeartbeat(context)
             refreshStatus()
         }
         result
     }
 
     suspend fun logout(): Result<String> = withContext(Dispatchers.IO) {
+        CampusHeartbeatScheduler.stopHeartbeat(context)
         val wifiNet = getWifiNetwork()
         api.setWifiSocketFactory(wifiNet?.socketFactory, getWifiLocalAddress(wifiNet))
 

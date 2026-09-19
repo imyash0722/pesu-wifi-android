@@ -5,32 +5,30 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.5.2 — Continuous Cyberoam 150s Keepalive Engine & Zero-Drop Standby](#v152--continuous-cyberoam-150s-keepalive-engine--zero-drop-standby)
+  - [Overview & Major Highlights](#v152-overview--major-highlights)
+- [v1.5.1 — Android 12+ Forward Compatibility, 16 KB Page Alignment & Nearby Wi-Fi Devices](#v151--android-12-forward-compatibility-16-kb-page-alignment--nearby-wi-fi-devices)
+  - [Overview & Major Highlights](#v151-overview--major-highlights)
 - [v1.5.0 — Event-Driven OS Rules, 5 Campus SSIDs & Pure Standby Architecture](#v150--event-driven-os-rules-5-campus-ssids--pure-standby-architecture)
-  - [Overview & Major Highlights](#v150-overview--major-highlights)
-- [beta-v1.5.0 — Campus AP Scale & Autonomous BSSID Harvesting](#beta-v150--campus-ap-scale--autonomous-bssid-harvesting)
-  - [Overview & Major Highlights](#beta-v150-overview--major-highlights)
-- [v1.4.6 — Classroom Wi-Fi Stability, Tailscale Socket Resiliency & UI Polish](#v146--classroom-wi-fi-stability-tailscale-socket-resiliency--ui-polish)
-  - [Overview & Major Highlights](#v146-overview--major-highlights)
-- [v1.4.5 — Material You Redesign, Dual Flavors (Stable & Tester), BSSID Cataloging & Back Navigation](#v145--material-you-redesign-dual-flavors-stable--tester-bssid-cataloging--back-navigation)
-  - [Overview & Major Highlights](#v145-overview--major-highlights)
-- [v1.4.1 — Campus AP Auto-Reconnect, WifiNetworkSuggestion & Zero-Latency Fast Re-Auth](#v141--campus-ap-auto-reconnect-wifinetworksuggestion--zero-latency-fast-re-auth)
-  - [Overview & Major Highlights](#v141-overview--major-highlights)
-- [v1.4.0 — AP Roaming Recovery, Stale Session Auto-Eviction & Universal Diagnostics](#v140--ap-roaming-recovery-stale-session-auto-eviction--universal-diagnostics)
-  - [Overview & Major Highlights](#v140-overview--major-highlights)
-- [v1.3.0 — Resilient Socket Fallbacks, Non-Interference Mode & Diagnostic Logs](#v130--resilient-socket-fallbacks-non-interference-mode--diagnostic-logs)
-  - [Overview & Major Highlights](#v130-overview--major-highlights)
-- [v1.2.1 — Portal Login Detection & Network Connectivity Fix](#v121--portal-login-detection--network-connectivity-fix)
-  - [Overview & Major Highlights](#v121-overview--major-highlights)
-- [v1.2.0 — First-Launch Onboarding & Automated CI/CD Release](#v120--first-launch-onboarding--automated-cicd-release)
-  - [Overview & Major Highlights](#v120-overview--major-highlights)
-  - [Commit-by-Commit Technical Breakdown](#v120-commit-by-commit-technical-breakdown)
-- [v1.1.0 — Universal Android Keepalive & Stability Update](#v110--universal-android-keepalive--stability-update)
-  - [Overview & Major Highlights](#v110-overview--major-highlights)
-  - [Commit-by-Commit Technical Breakdown](#v110-commit-by-commit-technical-breakdown)
-- [v1.0.0 — Initial Release](#v100--initial-release)
-  - [Overview & Major Highlights](#v100-overview--major-highlights)
-  - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
-- [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.5.2 — Continuous Cyberoam 150s Keepalive Engine & Zero-Drop Standby
+
+**Release Date:** September 19, 2026  
+**Git Tag:** [`v1.5.2`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.5.2)  
+**Release Type:** Official Release (Stable & Tester Tracks)  
+**APK Assets:**  
+- `pesu-wifi-v1.5.2-stable.apk` (Production / Stable track without debug logging overhead)  
+- `pesu-wifi-v1.5.2-tester.apk` (Tester track with full diagnostic logs, telemetry & AP explorer)  
+
+### v1.5.2 Overview & Major Highlights
+- **💓 Cyberoam 150s Continuous Keepalive Engine**: Reverse-engineered the Sophos / Cyberoam captive portal frontend scripts (`httpclient.js` and `cyberoamAjax.js`) to uncover the portal's strict `liveReqTimeInJS = 180` (3-minute) Dead Client Detection mechanism. Designed and implemented an ultra-lightweight heartbeat engine that transmits a single HTTP GET heartbeat (`/live?mode=192`) every 150 seconds (2.5 minutes), safely under the firewall's 180-second timeout window.
+- **🔄 Dual-Layer Keepalive Architecture**:
+  1. *In-Process Coroutine Ticker*: Runs seamlessly on `Dispatchers.IO` when the app is active, executing heartbeats with zero system wake alarm overhead.
+  2. *OS AlarmManager Set-And-Allow-While-Idle*: Uses an exact allow-listed `AlarmManager` wake timer (`ACTION_CAMPUS_HEARTBEAT`) that keeps the session alive even when the phone screen is locked and in deep Doze mode.
+- **🛡️ Instant Auto-Recovery**: If a heartbeat probe ever fails due to transient physical AP handover or firewall lease eviction, the engine immediately re-authenticates the active credentials in under 50 ms.
+- **⚡ Strict Zero-Battery Standby Off-Campus**: The heartbeat automatically halts and disarms all alarms the instant the device leaves campus Wi-Fi or disconnects, guaranteeing zero battery consumption when off-campus.
 
 ---
 

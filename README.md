@@ -3,8 +3,8 @@
 Native Android companion app for PESU captive portal login, session management, and continuous keepalive. Replicates the core logic of the `pesu-wifi` CLI with a clean Material 3 interface and background Foreground Service.
 
 [![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases)
-[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.5.1-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.5.1/pesu-wifi-v1.5.1-stable.apk)
-[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.5.1-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.5.1/pesu-wifi-v1.5.1-tester.apk)
+[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.5.2-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.5.2/pesu-wifi-v1.5.2-stable.apk)
+[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.5.2-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.5.2/pesu-wifi-v1.5.2-tester.apk)
 [![Changelog](https://img.shields.io/badge/Changelog-Release_Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -12,6 +12,7 @@ Native Android companion app for PESU captive portal login, session management, 
 
 ## Features
 
+- **Continuous 150s Cyberoam Keepalive Engine**: Dual-layer heartbeat (in-process coroutines + exact allow-listed `AlarmManager` wakeup timers) pings `/live?mode=192` every 2.5 minutes, preventing firewall Dead Client Detection from dropping sessions while phone is idle.
 - **Pure Event-Driven OS Rules**: Zero-battery background architecture using native Android `WifiNetworkSuggestion`, persistent `ConnectivityManager` `PendingIntent`, and persistent `JobScheduler`.
 - **5 Campus SSIDs Supported**: Pre-configured with `PESU-EC-Campus`, `PESU-CIE`, `AMAATRA_HOSTEL`, `Foodcourt`, and `pes south cafe`.
 - **Automated Login & Logout**: Instant auto-authentication against the Cyberoam gateway (`http://192.168.254.1:8090`).
@@ -31,7 +32,7 @@ Native Android companion app for PESU captive portal login, session management, 
 - **UI Toolkit**: Jetpack Compose + Material 3
 - **Network Engine**: OkHttp 4.12 (direct Wi-Fi `SocketFactory` binding, `Proxy.NO_PROXY`, zero-idle pool)
 - **Security**: AndroidX Security Crypto (`MasterKey` AES-256-GCM / AES-256-SIV)
-- **Background Engine**: Pure Event-Driven OS Rules (`WifiNetworkSuggestion`, `ConnectivityManager` persistent `PendingIntent`, `JobScheduler`)
+- **Background Engine**: Dual-layer Continuous Keepalive (`AlarmManager` allow-while-idle + Coroutines) & Pure Event-Driven OS Rules (`WifiNetworkSuggestion`, persistent `ConnectivityManager` `PendingIntent`, `JobScheduler`)
 - **Quick Settings**: Android `TileService`
 
 ---

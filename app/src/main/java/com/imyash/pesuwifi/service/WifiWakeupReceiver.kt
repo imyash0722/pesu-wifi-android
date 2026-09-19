@@ -93,6 +93,7 @@ class WifiWakeupReceiver : BroadcastReceiver() {
 
             if (!isWifi) {
                 AppLogger.d(TAG, "Non-Wi-Fi network event, ignoring.")
+                CampusHeartbeatScheduler.stopHeartbeat(appContext)
                 return
             }
 
@@ -139,6 +140,7 @@ class WifiWakeupReceiver : BroadcastReceiver() {
                     val result = portalRepo.login(activeUser)
                     if (result.isSuccess) {
                         AppLogger.i(TAG, "Auto-authentication SUCCESS for $activeUser via OS wakeup rule!")
+                        CampusHeartbeatScheduler.startHeartbeat(appContext)
                         try {
                             network?.let { cm.reportNetworkConnectivity(it, true) }
                         } catch (_: Exception) {
@@ -148,6 +150,7 @@ class WifiWakeupReceiver : BroadcastReceiver() {
                     }
                 } else if (status.isLoggedIn) {
                     AppLogger.d(TAG, "Campus session confirmed active as ${status.activeUsername}")
+                    CampusHeartbeatScheduler.startHeartbeat(appContext)
                     try {
                         network?.let { cm.reportNetworkConnectivity(it, true) }
                     } catch (_: Exception) {
@@ -155,6 +158,7 @@ class WifiWakeupReceiver : BroadcastReceiver() {
                 }
             } else {
                 portalRepo.updateTelemetry(bssid = currentBssid)
+                CampusHeartbeatScheduler.stopHeartbeat(appContext)
                 AppLogger.i(TAG, "External Wi-Fi network detected ('$currentSsid'). Entering non-interference standby.")
             }
         }
