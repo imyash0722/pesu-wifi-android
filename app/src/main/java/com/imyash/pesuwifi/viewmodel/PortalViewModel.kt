@@ -9,7 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.imyash.pesuwifi.data.AccountRepository
 import com.imyash.pesuwifi.data.PortalRepository
 import com.imyash.pesuwifi.data.PortalStatus
-import com.imyash.pesuwifi.service.WifiKeepaliveService
+import com.imyash.pesuwifi.service.SystemRuleManager
 import com.imyash.pesuwifi.util.PermissionManager
 import com.imyash.pesuwifi.util.PermissionState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +23,6 @@ data class UiState(
     val status: PortalStatus = PortalStatus(),
     val accounts: Map<String, String> = emptyMap(),
     val activeUser: String? = null,
-    val isDaemonRunning: Boolean = false,
     val permissionState: PermissionState = PermissionState(),
     val isLoading: Boolean = false,
     val userMessage: String? = null,
@@ -44,7 +43,6 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
         portalRepository.statusFlow,
         accountRepository.accountsFlow,
         accountRepository.activeUserFlow,
-        WifiKeepaliveService.isServiceRunning,
         _permissionState,
         _isLoading,
         _userMessage,
@@ -55,11 +53,10 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
             status = args[0] as PortalStatus,
             accounts = args[1] as Map<String, String>,
             activeUser = args[2] as? String,
-            isDaemonRunning = args[3] as Boolean,
-            permissionState = args[4] as PermissionState,
-            isLoading = args[5] as Boolean,
-            userMessage = args[6] as? String,
-            errorMessage = args[7] as? String
+            permissionState = args[3] as PermissionState,
+            isLoading = args[4] as Boolean,
+            userMessage = args[5] as? String,
+            errorMessage = args[6] as? String
         )
     }.stateIn(
         scope = viewModelScope,
@@ -125,18 +122,6 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
             } finally {
                 _isLoading.value = false
             }
-        }
-    }
-
-    fun toggleDaemon() {
-        val running = WifiKeepaliveService.isServiceRunning.value
-        val context = getApplication<Application>().applicationContext
-        if (running) {
-            WifiKeepaliveService.stop(context)
-            _userMessage.value = "Keepalive daemon stopped"
-        } else {
-            WifiKeepaliveService.start(context)
-            _userMessage.value = "Keepalive daemon started"
         }
     }
 

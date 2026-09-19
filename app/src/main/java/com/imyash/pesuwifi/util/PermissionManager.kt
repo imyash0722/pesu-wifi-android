@@ -20,14 +20,13 @@ data class PermissionState(
     val hasAutostartSettings: Boolean = false
 ) {
     val allEssentialGranted: Boolean
-        get() = isNotificationGranted && isBatteryOptimizationIgnored && canScheduleExactAlarms
+        get() = isBatteryOptimizationIgnored
 
     val missingCount: Int
         get() {
             var count = 0
             if (!isNotificationGranted) count++
             if (!isBatteryOptimizationIgnored) count++
-            if (!canScheduleExactAlarms) count++
             return count
         }
 }
@@ -76,14 +75,7 @@ object PermissionManager {
         }
     }
 
-    fun canScheduleExactAlarms(context: Context): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val am = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
-            am?.canScheduleExactAlarms() ?: true
-        } else {
-            true
-        }
-    }
+    fun canScheduleExactAlarms(context: Context): Boolean = true
 
     fun getBatteryOptimizationIntent(packageName: String): Intent {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

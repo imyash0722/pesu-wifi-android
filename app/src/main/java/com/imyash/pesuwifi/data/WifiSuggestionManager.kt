@@ -8,8 +8,24 @@ import com.imyash.pesuwifi.util.AppLogger
 
 object WifiSuggestionManager {
     private const val TAG = "WifiSuggestionManager"
-    const val CAMPUS_SSID = "PESU-EC-Campus"
-    const val CAMPUS_PASSPHRASE = "PESU-EC-Campus"
+
+    data class SuggestionTarget(
+        val ssid: String,
+        val passphrase: String? = null
+    )
+
+    val CAMPUS_TARGETS = listOf(
+        SuggestionTarget("PESU-EC-Campus", "PESU-EC-Campus"),
+        SuggestionTarget("PESU-EC-Campus", null),
+        SuggestionTarget("PESU-CIE", "PESU-CIE"),
+        SuggestionTarget("PESU-CIE", null),
+        SuggestionTarget("AMAATRA_HOSTEL", "AMAATRA_HOSTEL"),
+        SuggestionTarget("AMAATRA_HOSTEL", null),
+        SuggestionTarget("Foodcourt", "Foodcourt"),
+        SuggestionTarget("Foodcourt", null),
+        SuggestionTarget("pes south cafe", "pes south cafe"),
+        SuggestionTarget("pes south cafe", null)
+    )
 
     @Volatile
     private var isRegistered = false
@@ -27,22 +43,31 @@ object WifiSuggestionManager {
         }
 
         return try {
-            val suggestionBuilder = WifiNetworkSuggestion.Builder()
-                .setSsid(CAMPUS_SSID)
-                .setWpa2Passphrase(CAMPUS_PASSPHRASE)
-                .setIsAppInteractionRequired(false) // Auto-connects in background without app interaction
-                .setIsUserInteractionRequired(false) // Do not prompt user
+            val suggestions = CAMPUS_TARGETS.mapNotNull { target ->
+                try {
+                    val builder = WifiNetworkSuggestion.Builder()
+                        .setSsid(target.ssid)
+                        .setIsAppInteractionRequired(false)
+                        .setIsUserInteractionRequired(false)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                suggestionBuilder.setPriority(1000) // Top priority on Android 11+
-                suggestionBuilder.setIsInitialAutojoinEnabled(true)
+                    if (target.passphrase != null) {
+                        builder.setWpa2Passphrase(target.passphrase)
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        builder.setPriority(1000)
+                        builder.setIsInitialAutojoinEnabled(true)
+                    }
+                    builder.build()
+                } catch (e: Exception) {
+                    AppLogger.w(TAG, "Error building suggestion for ${target.ssid}: ${e.message}")
+                    null
+                }
             }
 
-            val suggestion = suggestionBuilder.build()
-            val status = wm.addNetworkSuggestions(listOf(suggestion))
-
+            val status = wm.addNetworkSuggestions(suggestions)
             val statusStr = when (status) {
-                WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS -> "SUCCESS (0)"
+                WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS -> "SUCCESS"
                 WifiManager.STATUS_NETWORK_SUGGESTIONS_ERROR_ADD_DUPLICATE -> "ALREADY_REGISTERED_DUPLICATE"
                 WifiManager.STATUS_NETWORK_SUGGESTIONS_ERROR_ADD_INVALID -> "ERROR_ADD_INVALID"
                 WifiManager.STATUS_NETWORK_SUGGESTIONS_ERROR_ADD_NOT_ALLOWED -> "ERROR_ADD_NOT_ALLOWED"
@@ -55,13 +80,13 @@ object WifiSuggestionManager {
 
             if (success) {
                 isRegistered = true
-                AppLogger.wifi(TAG, "Campus Wi-Fi suggestion active for '$CAMPUS_SSID': $statusStr")
+                AppLogger.wifi(TAG, "Campus Wi-Fi suggestions registered (${suggestions.size} profiles): $statusStr")
             } else {
-                AppLogger.w(TAG, "Failed to register campus Wi-Fi suggestion: $statusStr")
+                AppLogger.w(TAG, "Failed to register campus Wi-Fi suggestions: $statusStr")
             }
             success
         } catch (e: Exception) {
-            AppLogger.e(TAG, "Exception registering campus Wi-Fi suggestion: ${e.message}", e)
+            AppLogger.e(TAG, "Exception registering campus Wi-Fi suggestions: ${e.message}", e)
             false
         }
     }
@@ -70,16 +95,21 @@ object WifiSuggestionManager {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
         val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager ?: return false
         return try {
-            val suggestion = WifiNetworkSuggestion.Builder()
-                .setSsid(CAMPUS_SSID)
-                .setWpa2Passphrase(CAMPUS_PASSPHRASE)
-                .build()
-            val status = wm.removeNetworkSuggestions(listOf(suggestion))
+            val suggestions = CAMPUS_TARGETS.mapNotNull { target ->
+                try {
+                    val builder = WifiNetworkSuggestion.Builder().setSsid(target.ssid)
+                    if (target.passphrase != null) builder.setWpa2Passphrase(target.passphrase)
+                    builder.build()
+                } catch (_: Exception) {
+                    null
+                }
+            }
+            val status = wm.removeNetworkSuggestions(suggestions)
             isRegistered = false
-            AppLogger.wifi(TAG, "Removed campus Wi-Fi suggestion for '$CAMPUS_SSID' (status=$status)")
+            AppLogger.wifi(TAG, "Removed campus Wi-Fi suggestions (status=$status)")
             status == WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS
         } catch (e: Exception) {
-            AppLogger.w(TAG, "Error removing campus Wi-Fi suggestion: ${e.message}")
+            AppLogger.w(TAG, "Error removing campus Wi-Fi suggestions: ${e.message}")
             false
         }
     }

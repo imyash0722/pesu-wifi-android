@@ -17,7 +17,11 @@ object RouterPing {
      * Falls back to probing common router ports (8090, 80, 53) if ICMP is filtered.
      * Returns true if the router is reachable.
      */
-    suspend fun pingGateway(gatewayIp: String?, timeoutMs: Int = 1500): Boolean = withContext(Dispatchers.IO) {
+    suspend fun pingGateway(
+        gatewayIp: String?,
+        timeoutMs: Int = 1500,
+        network: android.net.Network? = null
+    ): Boolean = withContext(Dispatchers.IO) {
         if (gatewayIp.isNullOrBlank()) {
             AppLogger.d(TAG, "pingGateway: No gateway IP provided")
             return@withContext false
@@ -38,12 +42,17 @@ object RouterPing {
             AppLogger.d(TAG, "pingGateway($gatewayIp): ICMP ping threw ${e.message}")
         }
 
-        // 2. TCP socket fallback
+        // 2. TCP socket fallback bound to network
         val probePorts = listOf(8090, 80, 53)
         for (port in probePorts) {
             try {
-                Socket().use { socket ->
-                    socket.connect(InetSocketAddress(gatewayIp, port), timeoutMs)
+                val socket = if (network != null) {
+                    network.socketFactory.createSocket()
+                } else {
+                    Socket()
+                }
+                socket.use { s ->
+                    s.connect(InetSocketAddress(gatewayIp, port), timeoutMs)
                     AppLogger.d(TAG, "pingGateway($gatewayIp:$port): TCP connect successful")
                     return@withContext true
                 }

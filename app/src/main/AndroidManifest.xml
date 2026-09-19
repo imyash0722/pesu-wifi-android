@@ -5,14 +5,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -41,11 +37,6 @@
         </activity>
 
         <service
-            android:name=".service.WifiKeepaliveService"
-            android:foregroundServiceType="dataSync|location"
-            android:exported="true" />
-
-        <service
             android:name=".service.PesuTileService"
             android:icon="@drawable/ic_wifi"
             android:label="PESU WiFi"
@@ -65,18 +56,18 @@
         </receiver>
 
         <receiver
-            android:name=".service.KeepaliveAlarmReceiver"
-            android:exported="true" />
-
-        <receiver
             android:name=".service.WifiWakeupReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.net.wifi.action.WIFI_NETWORK_SUGGESTION_POST_CONNECTION" />
                 <action android:name="com.imyash.pesuwifi.ACTION_NETWORK_CALLBACK" />
-                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".service.WifiWakeupJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="true" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

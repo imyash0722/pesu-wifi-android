@@ -72,8 +72,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
-import com.imyash.pesuwifi.service.WifiKeepaliveService
-import com.imyash.pesuwifi.service.WifiTelemetry
+import com.imyash.pesuwifi.data.PortalRepository
+import com.imyash.pesuwifi.data.WifiTelemetry
 import com.imyash.pesuwifi.ui.theme.StatusAmber
 import com.imyash.pesuwifi.ui.theme.StatusGreen
 import com.imyash.pesuwifi.util.AppLogger
@@ -97,7 +97,8 @@ fun LogsScreen(
 ) {
     val context = LocalContext.current
     val allLogs by AppLogger.logsFlow.collectAsState()
-    val telemetry by WifiKeepaliveService.telemetryFlow.collectAsState()
+    val portalRepo = remember { PortalRepository.getInstance(context) }
+    val telemetry by portalRepo.telemetryFlow.collectAsState()
     val campusAps by BssidDatabase.campusApsFlow.collectAsState()
     val listState = rememberLazyListState()
 
@@ -251,7 +252,7 @@ fun LogsScreen(
                 telemetry = telemetry,
                 campusAps = campusAps,
                 onTriggerScan = {
-                    val ok = WifiKeepaliveService.triggerManualScan(context)
+                    val ok = portalRepo.triggerManualScan(context)
                     val msg = if (ok) "Scanning for campus APs..." else "Scan throttled by Android (try again shortly)"
                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 },

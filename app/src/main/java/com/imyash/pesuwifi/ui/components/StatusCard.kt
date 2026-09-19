@@ -44,7 +44,7 @@ import com.imyash.pesuwifi.ui.theme.StatusRed
 @Composable
 fun StatusCard(
     status: PortalStatus,
-    isDaemonRunning: Boolean,
+    isAutoConnectEnabled: Boolean = true,
     onViewLogs: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -156,10 +156,10 @@ fun StatusCard(
                         }
                     }
 
-                    // Daemon Status Chip
+                    // Auto-Connect Status Chip
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = if (isDaemonRunning) StatusGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
+                        color = if (isAutoConnectEnabled) StatusGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -169,14 +169,14 @@ fun StatusCard(
                                 modifier = Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(if (isDaemonRunning) StatusGreen else Color.Gray)
+                                    .background(if (isAutoConnectEnabled) StatusGreen else Color.Gray)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isDaemonRunning) "Daemon: On" else "Daemon: Off",
+                                text = if (isAutoConnectEnabled) "Auto-Connect: On" else "Auto-Connect: Off",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = if (isDaemonRunning) StatusGreen else MaterialTheme.colorScheme.onSurface
+                                color = if (isAutoConnectEnabled) StatusGreen else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }

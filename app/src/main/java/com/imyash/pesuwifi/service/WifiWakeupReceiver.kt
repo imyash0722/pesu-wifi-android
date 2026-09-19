@@ -24,7 +24,8 @@ import kotlinx.coroutines.launch
  * 3. System connectivity changes
  *
  * Verifies router reachability upon physical AP (BSSID) handovers and
- * guarantees automatic authentication and keepalive persistence.
+ * executes automatic zero-latency authentication on campus networks.
+ * Purely event-driven: requires no persistent background service or alarms.
  */
 class WifiWakeupReceiver : BroadcastReceiver() {
 
@@ -44,7 +45,7 @@ class WifiWakeupReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                handleSystemNetworkEvent(context, intent)
+                handleNetworkEvent(context, intent)
             } catch (e: Exception) {
                 AppLogger.e(TAG, "Error processing OS network event: ${e.message}", e)
             } finally {
@@ -57,96 +58,6 @@ class WifiWakeupReceiver : BroadcastReceiver() {
         }
     }
 
-    private suspend fun handleSystemNetworkEvent(context: Context, intent: Intent) {
-        val appContext = context.applicationContext
-        val portalRepo = PortalRepository.getInstance(appContext)
-        val accountRepo = AccountRepository.getInstance(appContext)
-        val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
-
-        // 1. Resolve network handle from intent or active Wi-Fi
-        val network: Network? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK, Network::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK)
-        } ?: cm.activeNetwork ?: portalRepo.getWifiNetwork()
-
-        val caps: NetworkCapabilities? = if (network != null) {
-            cm.getNetworkCapabilities(network)
-        } else null
-
-        val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true ||
-                portalRepo.getWifiNetwork() != null
-
-        if (!isWifi) {
-            AppLogger.d(TAG, "Non-Wi-Fi network event, ignoring.")
-            return
-        }
-
-        val currentSsid = portalRepo.getCurrentWifiSsid(network)
-        val wifiInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            caps?.transportInfo as? WifiInfo
-        } else null
-
-        val currentBssid = wifiInfo?.bssid?.takeIf { it != "02:00:00:00:00:00" }
-            ?: portalRepo.getCurrentWifiBssid(network)
-
-        val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val lastBssid = prefs.getString(KEY_LAST_BSSID, null)
-        val bssidChanged = currentBssid != null && lastBssid != null && currentBssid != lastBssid
-
-        if (currentBssid != null) {
-            prefs.edit().putString(KEY_LAST_BSSID, currentBssid).apply()
-        }
-
-        val gateway = portalRepo.getDefaultGateway(network)
-
-        // BSSID change: ping router to verify physical link
-        if (bssidChanged) {
-            AppLogger.roam(TAG, "BSSID changed: '$lastBssid' -> '$currentBssid'. Pinging router gateway ($gateway)...")
-            val pingOk = RouterPing.pingGateway(gateway)
-            AppLogger.roam(TAG, "Router gateway ping: success=$pingOk")
-        }
-
-        val isCampus = portalRepo.isCampusNetwork(network)
-        val isCaptivePortal = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
-
-        AppLogger.i(TAG, "OS Event: SSID='$currentSsid', BSSID='$currentBssid', isCampus=$isCampus, isCaptivePortal=$isCaptivePortal")
-
-        if (isCampus) {
-            // Ping router to confirm connection
-            val pingOk = RouterPing.pingGateway(gateway)
-            AppLogger.d(TAG, "Router ping ($gateway): success=$pingOk")
-
-            val status = portalRepo.refreshStatus()
-            val activeUser = accountRepo.getActiveUser()
-
-            if ((!status.isLoggedIn || isCaptivePortal) && activeUser != null) {
-                AppLogger.i(TAG, "Campus network active (isLoggedIn=${status.isLoggedIn}, isCaptivePortal=$isCaptivePortal): auto-authenticating as $activeUser")
-                val result = portalRepo.login(activeUser)
-                if (result.isSuccess) {
-                    AppLogger.i(TAG, "Auto-authentication SUCCESS for $activeUser via OS wakeup rule!")
-                    try {
-                        network?.let { cm.reportNetworkConnectivity(it, true) }
-                    } catch (_: Exception) {
-                    }
-                    WifiKeepaliveService.start(appContext)
-                } else {
-                    AppLogger.w(TAG, "Auto-authentication failed: ${result.exceptionOrNull()?.message}")
-                }
-            } else if (status.isLoggedIn) {
-                AppLogger.d(TAG, "Campus session confirmed active as ${status.activeUsername}")
-                val keepaliveEnabled = appContext.getSharedPreferences("pesu_wifi_settings", Context.MODE_PRIVATE)
-                    .getBoolean("autostart_on_boot", true)
-                if (keepaliveEnabled) {
-                    WifiKeepaliveService.start(appContext)
-                }
-            }
-        } else {
-            AppLogger.i(TAG, "External Wi-Fi network detected ('$currentSsid'). Entering non-interference standby.")
-        }
-    }
-
     companion object {
         private const val TAG = "WifiWakeupReceiver"
         private const val PREFS_NAME = "pesu_wifi_wakeup_prefs"
@@ -154,5 +65,98 @@ class WifiWakeupReceiver : BroadcastReceiver() {
 
         const val ACTION_NETWORK_CALLBACK = "com.imyash.pesuwifi.ACTION_NETWORK_CALLBACK"
         const val ACTION_WIFI_SUGGESTION = "android.net.wifi.action.WIFI_NETWORK_SUGGESTION_POST_CONNECTION"
+
+        suspend fun handleNetworkEvent(context: Context, intent: Intent? = null) {
+            val appContext = context.applicationContext
+            val portalRepo = PortalRepository.getInstance(appContext)
+            val accountRepo = AccountRepository.getInstance(appContext)
+            val cm = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+
+            // 1. Resolve network handle from intent or active Wi-Fi
+            val networkFromIntent: Network? = if (intent != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK, Network::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK)
+                }
+            } else null
+
+            val network: Network? = networkFromIntent ?: cm.activeNetwork ?: portalRepo.getWifiNetwork()
+
+            val caps: NetworkCapabilities? = if (network != null) {
+                cm.getNetworkCapabilities(network)
+            } else null
+
+            val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true ||
+                    portalRepo.getWifiNetwork() != null
+
+            if (!isWifi) {
+                AppLogger.d(TAG, "Non-Wi-Fi network event, ignoring.")
+                return
+            }
+
+            val currentSsid = portalRepo.getCurrentWifiSsid(network)
+            val wifiInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                caps?.transportInfo as? WifiInfo
+            } else null
+
+            val currentBssid = wifiInfo?.bssid?.takeIf { it != "02:00:00:00:00:00" }
+                ?: portalRepo.getCurrentWifiBssid(network)
+
+            val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val lastBssid = prefs.getString(KEY_LAST_BSSID, null)
+            val bssidChanged = currentBssid != null && lastBssid != null && currentBssid != lastBssid
+
+            if (currentBssid != null) {
+                prefs.edit().putString(KEY_LAST_BSSID, currentBssid).apply()
+            }
+
+            val gateway = portalRepo.getDefaultGateway(network)
+
+            // BSSID change: ping router to verify physical link
+            if (bssidChanged) {
+                AppLogger.roam(TAG, "BSSID changed: '$lastBssid' -> '$currentBssid'. Pinging router gateway ($gateway)...")
+                val pingOk = RouterPing.pingGateway(gateway, network = network)
+                AppLogger.roam(TAG, "Router gateway ping: success=$pingOk")
+            }
+
+            val isCampus = portalRepo.isCampusNetwork(network)
+            val isCaptivePortal = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
+
+            AppLogger.i(TAG, "OS Event: SSID='$currentSsid', BSSID='$currentBssid', isCampus=$isCampus, isCaptivePortal=$isCaptivePortal")
+
+            if (isCampus) {
+                // Ping router to confirm connection
+                val pingOk = RouterPing.pingGateway(gateway, network = network)
+                AppLogger.d(TAG, "Router ping ($gateway): success=$pingOk")
+
+                val status = portalRepo.refreshStatus()
+                val activeUser = accountRepo.getActiveUser()
+
+                if ((!status.isLoggedIn || isCaptivePortal) && activeUser != null) {
+                    AppLogger.i(TAG, "Campus network active (isLoggedIn=${status.isLoggedIn}, isCaptivePortal=$isCaptivePortal): auto-authenticating as $activeUser")
+                    val result = portalRepo.login(activeUser)
+                    if (result.isSuccess) {
+                        AppLogger.i(TAG, "Auto-authentication SUCCESS for $activeUser via OS wakeup rule!")
+                        try {
+                            network?.let { cm.reportNetworkConnectivity(it, true) }
+                        } catch (_: Exception) {
+                        }
+                    } else {
+                        AppLogger.w(TAG, "Auto-authentication failed: ${result.exceptionOrNull()?.message}")
+                    }
+                } else if (status.isLoggedIn) {
+                    AppLogger.d(TAG, "Campus session confirmed active as ${status.activeUsername}")
+                    try {
+                        network?.let { cm.reportNetworkConnectivity(it, true) }
+                    } catch (_: Exception) {
+                    }
+                }
+            } else {
+                portalRepo.updateTelemetry(bssid = currentBssid)
+                AppLogger.i(TAG, "External Wi-Fi network detected ('$currentSsid'). Entering non-interference standby.")
+            }
+        }
     }
 }

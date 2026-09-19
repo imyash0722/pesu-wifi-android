@@ -36,6 +36,9 @@ class PortalRepository(
     private val _statusFlow = MutableStateFlow(PortalStatus())
     val statusFlow: StateFlow<PortalStatus> = _statusFlow.asStateFlow()
 
+    private val _telemetryFlow = MutableStateFlow(WifiTelemetry())
+    val telemetryFlow: StateFlow<WifiTelemetry> = _telemetryFlow.asStateFlow()
+
     private var consecutiveProbeFailures = 0
 
     @Volatile
@@ -112,7 +115,8 @@ class PortalRepository(
     fun isCampusSsid(ssid: String?): Boolean {
         if (ssid.isNullOrBlank()) return false
         val clean = ssid.replace("\"", "").trim()
-        return clean.contains("PESU", ignoreCase = true)
+        if (clean.contains("PESU", ignoreCase = true)) return true
+        return CAMPUS_SSIDS.any { it.equals(clean, ignoreCase = true) }
     }
 
     /**
@@ -169,16 +173,19 @@ class PortalRepository(
         val lp = connectivityManager?.getLinkProperties(net)
         if (lp != null) {
             val gw = lp.routes.firstOrNull { it.isDefaultRoute }?.gateway?.hostAddress
-            if (gw != null && gw.startsWith("192.168.254.")) {
-                lastConfirmedCampusNetwork = net
-                lastConfirmedCampusTime = now
-                return true
-            }
-
             val dns = lp.dnsServers.mapNotNull { it.hostAddress }
-            if (dns.contains("192.168.3.2")) {
+            val domains = lp.domains ?: ""
+            val ips = lp.linkAddresses.mapNotNull { it.address?.hostAddress }
+
+            val isCampusInfrastructure = (gw != null && (gw.startsWith("192.168.254.") || gw.startsWith("10."))) ||
+                    dns.any { it.startsWith("192.168.3.") } ||
+                    domains.contains("pesu", ignoreCase = true) ||
+                    ips.any { it.startsWith("10.") || it.startsWith("172.16.") }
+
+            if (isCampusInfrastructure) {
                 lastConfirmedCampusNetwork = net
                 lastConfirmedCampusTime = now
+                AppLogger.d("PortalRepository", "isCampusNetwork: Infrastructure match (GW=$gw, DNS=$dns, Domains=$domains, IPs=$ips). Campus recognized.")
                 return true
             }
         }
@@ -196,6 +203,50 @@ class PortalRepository(
         lastConfirmedCampusNetwork = null
         lastConfirmedCampusSsid = null
         lastConfirmedCampusTime = 0L
+    }
+
+    fun updateTelemetry(
+        bssid: String? = null,
+        rssi: Int? = null,
+        frequency: Int? = null
+    ) {
+        val net = getWifiNetwork()
+        val ssid = getCurrentWifiSsid(net)
+        val currentBssid = bssid ?: getCurrentWifiBssid(net)
+        val ip = getWifiLocalAddress(net)?.hostAddress
+        val gw = getDefaultGateway(net)
+        val isCampus = isCampusNetwork(net)
+        val ch = if (frequency != null && frequency > 0) frequencyToChannel(frequency) else null
+
+        _telemetryFlow.value = WifiTelemetry(
+            isConnected = net != null,
+            ssid = ssid,
+            bssid = currentBssid,
+            rssi = rssi,
+            frequency = frequency,
+            channel = ch,
+            ip = ip,
+            gateway = gw,
+            isCampus = isCampus,
+            lastUpdate = System.currentTimeMillis()
+        )
+    }
+
+    fun triggerManualScan(context: Context): Boolean {
+        val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as? android.net.wifi.WifiManager
+        return try {
+            @Suppress("DEPRECATION")
+            val ok = wm?.startScan() ?: false
+            if (ok) {
+                AppLogger.d("PortalRepository", "Manual Wi-Fi scan triggered successfully")
+            } else {
+                AppLogger.w("PortalRepository", "Manual Wi-Fi scan was throttled or rejected by system")
+            }
+            ok
+        } catch (e: Exception) {
+            AppLogger.w("PortalRepository", "Failed to trigger manual scan: ${e.message}")
+            false
+        }
     }
 
     suspend fun refreshStatus(): PortalStatus = withContext(Dispatchers.IO) {
@@ -217,6 +268,7 @@ class PortalRepository(
                 statusMessage = "Wi-Fi disconnected"
             )
             _statusFlow.value = status
+            updateTelemetry()
             AppLogger.d("PortalRepository", "refreshStatus: Wi-Fi is not connected")
             return@withContext status
         }
@@ -250,6 +302,7 @@ class PortalRepository(
                     statusMessage = "PESU Wi-Fi: Gateway probe unreachable (roaming or VPN active)"
                 )
                 _statusFlow.value = status
+                updateTelemetry()
                 AppLogger.roam("PortalRepository", "refreshStatus: Campus network active (SSID='$currentSsid', IP='${localIp?.hostAddress}'), but gateway unreachable. Preserving campus mode (latency ${latency}ms)")
                 return@withContext status
             } else {
@@ -262,9 +315,10 @@ class PortalRepository(
                     activeUsername = activeUser,
                     latencyMs = latency,
                     lastCheckedTimestamp = System.currentTimeMillis(),
-                    statusMessage = "External Wi-Fi (Keepalive paused)"
+                    statusMessage = "External Wi-Fi"
                 )
                 _statusFlow.value = status
+                updateTelemetry()
                 AppLogger.i("PortalRepository", "refreshStatus: Connected to external Wi-Fi '$currentSsid' (gateway probe timed out)")
                 return@withContext status
             }
@@ -318,6 +372,7 @@ class PortalRepository(
             statusMessage = message
         )
         _statusFlow.value = status
+        updateTelemetry()
         AppLogger.i("PortalRepository", "refreshStatus: PESU Wi-Fi active (loggedIn=$loggedIn, latency=${latency}ms)")
         status
     }
@@ -365,6 +420,14 @@ class PortalRepository(
     }
 
     companion object {
+        val CAMPUS_SSIDS = setOf(
+            "AMAATRA_HOSTEL",
+            "Foodcourt",
+            "PESU-EC-Campus",
+            "PESU-CIE",
+            "pes south cafe"
+        )
+
         @Volatile
         private var instance: PortalRepository? = null
 

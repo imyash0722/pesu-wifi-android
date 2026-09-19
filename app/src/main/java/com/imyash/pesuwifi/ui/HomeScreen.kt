@@ -93,7 +93,6 @@ fun HomeScreen(
     val context = LocalContext.current
 
     var showAddAccountDialog by remember { mutableStateOf(false) }
-    var showPermissionsDialog by remember { mutableStateOf(false) }
     var showFirstLaunchDialog by remember {
         mutableStateOf(
             !PermissionManager.hasSeenFirstLaunchPrompt(context) &&
@@ -394,51 +393,6 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ── Daemon list tile (no card, minimal) ───────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Sync,
-                        contentDescription = null,
-                        modifier = Modifier.size(26.dp),
-                        tint = if (state.isDaemonRunning) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column {
-                        Text(
-                            text = "Background Keepalive",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = if (state.isDaemonRunning) "Auto-reconnects every 60 s" else "Disabled",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Switch(
-                    checked = state.isDaemonRunning,
-                    onCheckedChange = {
-                        if (!state.isDaemonRunning && !state.permissionState.allEssentialGranted) {
-                            showPermissionsDialog = true
-                        } else {
-                            viewModel.toggleDaemon()
-                        }
-                    }
-                )
-            }
-
             // Tester build only: persistent PermissionsCard for easy debug access
             if (BuildConfig.SHOW_PERMISSIONS_SECTION &&
                 (!state.permissionState.allEssentialGranted || state.permissionState.hasAutostartSettings)) {
@@ -453,20 +407,6 @@ fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(48.dp))
-        }
-
-        if (showPermissionsDialog) {
-            PermissionsRequiredDialog(
-                permissionState = state.permissionState,
-                onRequestNotification = onRequestNotification,
-                onRequestBatteryOptimization = onRequestBatteryOptimization,
-                onRequestExactAlarm = onRequestExactAlarm,
-                onStartAnyway = {
-                    showPermissionsDialog = false
-                    viewModel.toggleDaemon()
-                },
-                onDismiss = { showPermissionsDialog = false }
-            )
         }
 
         if (showAddAccountDialog) {

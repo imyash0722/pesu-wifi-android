@@ -107,22 +107,10 @@ fun PermissionsCard(
             PermissionItemRow(
                 icon = Icons.Default.BatteryAlert,
                 title = "Unrestricted Battery",
-                description = "Prevents system from pausing keepalive when screen is off",
+                description = "Allows Android to wake app immediately on AP roaming or network events",
                 isGranted = permissionState.isBatteryOptimizationIgnored,
                 buttonText = "Whitelist",
                 onActionClick = onRequestBatteryOptimization
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Exact Alarm Item
-            PermissionItemRow(
-                icon = Icons.Default.Alarm,
-                title = "Exact 60s Alarms",
-                description = "Watchdog alarm wakes CPU to check portal connection",
-                isGranted = permissionState.canScheduleExactAlarms,
-                buttonText = "Enable",
-                onActionClick = onRequestExactAlarm
             )
 
             if (permissionState.hasAutostartSettings) {
@@ -130,7 +118,7 @@ fun PermissionsCard(
                 PermissionItemRow(
                     icon = Icons.Default.RocketLaunch,
                     title = "Autostart on Boot",
-                    description = "Allows auto-connect when device boots up",
+                    description = "Allows auto-connect rules when device boots up",
                     isGranted = false,
                     isOptional = true,
                     buttonText = "Settings",
