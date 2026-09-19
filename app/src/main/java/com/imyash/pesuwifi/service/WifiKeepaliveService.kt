@@ -38,6 +38,7 @@ import com.imyash.pesuwifi.data.WifiSuggestionManager
 import com.imyash.pesuwifi.BuildConfig
 import com.imyash.pesuwifi.data.BssidDatabase
 import com.imyash.pesuwifi.util.AppLogger
+import com.imyash.pesuwifi.util.RouterPing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -1004,6 +1005,9 @@ class WifiKeepaliveService : Service() {
         consecutiveFailureCount = 0
         reconnectJob?.cancel()
         reconnectJob = serviceScope.launch {
+            val gateway = lastGateway ?: portalRepository.getDefaultGateway(network)
+            val pingSuccess = RouterPing.pingGateway(gateway)
+            AppLogger.roam(TAG, "AP Roam to BSSID '$lastBssid': Router gateway ping ($gateway) success=$pingSuccess")
             delay(250L) // Fast 250ms debounce window for physical AP handover
             performKeepaliveCheck(force = true, isRoamingEvent = true)
             reportConnectivityValidated()

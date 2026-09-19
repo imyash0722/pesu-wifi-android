@@ -186,6 +186,12 @@ class PortalRepository(
         return false
     }
 
+    fun getDefaultGateway(wifiNet: Network? = null): String? {
+        val net = wifiNet ?: getWifiNetwork() ?: return null
+        val lp = connectivityManager?.getLinkProperties(net) ?: return null
+        return lp.routes.firstOrNull { it.isDefaultRoute }?.gateway?.hostAddress
+    }
+
     fun clearCampusCache() {
         lastConfirmedCampusNetwork = null
         lastConfirmedCampusSsid = null
