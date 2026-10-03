@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Wifi
@@ -186,9 +185,6 @@ fun HomeScreen(
                         } else {
                             Icon(imageVector = Icons.Default.Refresh, contentDescription = "Refresh")
                         }
-                    }
-                    IconButton(onClick = onNavigateToAccounts) {
-                        Icon(imageVector = Icons.Default.ManageAccounts, contentDescription = "Manage Accounts")
                     }
                     IconButton(onClick = onNavigateToLogs) {
                         Icon(imageVector = Icons.Default.Description, contentDescription = "Diagnostics & Logs")
