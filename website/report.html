@@ -328,6 +328,7 @@
     <!-- Report Form Card -->
     <main class="report-card">
       <form id="issueReportForm" class="report-form">
+        <input type="hidden" name="_cc" value="imyash0722@gmail.com">
         <div class="form-row">
           <div class="form-group">
             <label for="deviceModel">Phone Brand &amp; Model <span class="req">*</span></label>
@@ -470,6 +471,7 @@
           _subject: "[PESU WiFi Report] " + issueCategory + " (" + deviceModel + ")",
           _template: "table",
           _captcha: "false",
+          _cc: "imyash0722@gmail.com",
           device_model: deviceModel,
           android_version: androidVersion,
           campus_location: campusLocation,
