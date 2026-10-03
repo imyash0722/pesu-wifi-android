@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.7.0 — Smart Strongest AP Roaming, Dynamic Gateway Probing & 120s Jittered Keepalive](#v170--smart-strongest-ap-roaming-dynamic-gateway-probing--120s-jittered-keepalive)
+  - [Overview & Major Highlights](#v170-overview--major-highlights)
 - [v1.6.1 — OEM Battery Whitelist Manual Override, First-Launch Prompt Fix & Security Hardening](#v161--oem-battery-whitelist-manual-override-first-launch-prompt-fix--security-hardening)
   - [Overview & Major Highlights](#v161-overview--major-highlights)
 - [v1.6.0 — Unified OS-Level AP Switching, 60s Keepalive Engine & Android 16 Support](#v160--unified-os-level-ap-switching-60s-keepalive-engine--android-16-support)
@@ -35,6 +37,37 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.7.0 — Smart Strongest AP Roaming, Dynamic Gateway Probing & 120s Jittered Keepalive
+
+**Release Date:** October 3, 2026  
+**Git Tag:** [`v1.7.0`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.0)  
+**Release Type:** Major Feature Release  
+**APK Assets:**  
+- `pesu-wifi-v1.7.0-stable.apk` (Production / Stable track)  
+- `pesu-wifi-v1.7.0-tester.apk` (Tester track with diagnostic logs & telemetry)  
+
+### v1.7.0 Overview & Major Highlights
+
+- **📶 Smart Strongest AP Roaming & Auto-Connect**:
+  - Integrated active campus Wi-Fi scanning (`WifiSuggestionManager.findStrongestCampusAp`) that scans nearby BSSIDs and locks onto the AP with the highest RSSI signal strength across campus.
+  - Added `prioritizeTarget(ssid, bssid)` with priority 1000 to ensure seamless handovers between classroom and corridor access points.
+  - Tapping **Connect & Login** now automatically prompts to turn on the Wi-Fi radio via Android's Wi-Fi Settings Panel (API 29+) or direct toggle (API <29) if disabled.
+- **🌐 Dynamic Dual-Gateway Probing (EC Campus & Amaatra Hostel)**:
+  - Dynamically detects whether the connected network routes to the standard campus portal (`http://192.168.254.1:8090`) or the Amaatra Hostel gateway (`http://192.168.1.1:8090/httpclient.html`).
+  - Probes candidate gateway base URLs during portal availability checks and extracts destination URLs from captive redirect headers, eliminating hardcoded host assumptions.
+- **⏱️ 120s Continuous Keepalive Engine with ±30s Jitter**:
+  - Upgraded the foreground keepalive daemon from a fixed 60-second loop to a 120-second heartbeat with random ±30s jitter (90s–150s interval, clamped at 60s minimum).
+  - Desynchronizes client heartbeat requests to prevent simultaneous flood surges against Cyberroam captive portal gateways while maintaining uninterrupted sessions.
+  - Streamlined `HomeScreen` UI: removed the manual keepalive toggle in favor of an active, always-on status indicator: *"Continuous 120s keepalive active (±30s jitter)"*.
+- **🎨 "STUDY HARD" Earthy Visual Theme & Launcher Icon**:
+  - Applied the warm, collegiate "STUDY HARD" color palette (`#675647` deep mocha, `#E3BD90` caramel tan, `#DFD3B5` warm cream, `#6C6E36` olive green accent, `#3B3B3B` soft charcoal text).
+  - Modernized the Android app launcher icon across all density buckets (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) for both square and round variants.
+- **🌐 Minimalist GitHub Pages Landing Page**:
+  - Launched an ultra-lightweight, zero-dependency landing page served directly via GitHub Actions at [https://imyash0722.github.io/pesu-wifi-android/](https://imyash0722.github.io/pesu-wifi-android/).
+  - Fully responsive 2-column layout with inlined critical styles, light/dark mode support (`prefers-color-scheme`), vector assets, and direct APK download links.
 
 ---
 

@@ -3,8 +3,9 @@
 Native Android companion app for PESU captive portal login, session management, and continuous keepalive. Replicates the core logic of the `pesu-wifi` CLI with a clean Material 3 interface and background Foreground Service.
 
 [![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)
-[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.6.1-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.6.1/pesu-wifi-v1.6.1-stable.apk)
-[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.6.1-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.6.1/pesu-wifi-v1.6.1-tester.apk)
+[![Website](https://img.shields.io/badge/Website-GitHub_Pages-6C6E36.svg)](https://imyash0722.github.io/pesu-wifi-android/)
+[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.7.0-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.0/pesu-wifi-v1.7.0-stable.apk)
+[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.7.0-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.0/pesu-wifi-v1.7.0-tester.apk)
 [![Changelog](https://img.shields.io/badge/Changelog-Release_Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -12,22 +13,21 @@ Native Android companion app for PESU captive portal login, session management, 
 
 ## Features
 
-- **Automated Login & Logout**: 1-tap sign-in and sign-out against the Cyberoam gateway (`http://192.168.254.1:8090`).
-- **Continuous 60-Second Keepalive Engine (v1.4)**: Active foreground service loop with dual-redundant `AlarmManager.setExactAndAllowWhileIdle` ticking every 60s, paired with CPU `WakeLock` and `WifiLock` to satisfy Cyberoam's strict Dead Client Detection (DCD).
-- **OS-Level AP Switching & Zero-Latency Roam (v1.5)**: Uses Android system calls (`WifiNetworkSuggestion` across 5 campus SSIDs, system-persistent `ConnectivityManager` `NetworkCallback` `PendingIntent`, and fallback `JobScheduler`) to switch APs and trigger fast re-auth (<150ms) without waiting for alarms.
+- **Automated Login & Logout**: 1-tap sign-in and sign-out against campus Cyberroam gateways.
+- **Continuous 120-Second Jittered Keepalive Engine (v1.7)**: Foreground service keepalive running every 120s with &plusmn;30s randomized jitter (90s–150s range, clamped at 60s minimum) to prevent synchronized server floods while satisfying Cyberroam's strict Dead Client Detection (DCD).
+- **Smart Strongest AP Roaming & Auto-Connect (v1.7)**: Actively scans campus BSSIDs by RSSI signal strength (`WifiSuggestionManager.findStrongestCampusAp`), prioritizes the strongest access point across campus (`priority=1000`), and automatically prompts to power on the Wi-Fi radio on Connect button tap.
+- **Dynamic Dual-Gateway Probing (v1.7)**: Dynamically detects and probes candidate portal gateways between standard campus networks (`http://192.168.254.1:8090`) and the Amaatra Hostel portal (`http://192.168.1.1:8090/httpclient.html`), parsing captive redirect headers with seamless fallback.
+- **Earthy "STUDY HARD" Design Aesthetic (v1.7)**: Modernized launcher icon and landing page palette (`#675647` mocha, `#E3BD90` caramel tan, `#DFD3B5` cream, `#6C6E36` olive green).
+- **Minimalist Web Landing Page (v1.7)**: Zero-dependency, responsive landing page served directly via GitHub Actions at [https://imyash0722.github.io/pesu-wifi-android/](https://imyash0722.github.io/pesu-wifi-android/).
+- **OS-Level AP Switching & Zero-Latency Roam (v1.5/v1.6)**: Android system calls (`WifiNetworkSuggestion` across campus SSIDs, system-persistent `ConnectivityManager` `NetworkCallback` `PendingIntent`, and fallback `JobScheduler`) to trigger fast re-auth (<150ms) upon roaming.
 - **Router Reachability Probing (`RouterPing`)**: ICMP ping and network-bound TCP socket probing (ports 8090, 80, 53) to verify router gateway reachability during AP handovers before firing HTTP authentication.
+- **OEM Battery Optimization Override**: 1-tap manual whitelist confirmation resolving persistent detection hurdles on custom Android skins (Vivo FuntouchOS, Xiaomi MIUI/HyperOS, Samsung OneUI).
 - **Android 12–16 Forward Compatibility**: Full support for Android 16 (API 36), `NEARBY_WIFI_DEVICES` (`neverForLocation`), 16 KB page-aligned packaging, and predictive back navigation.
 - **Resilient Network Sockets (EPERM Resolution)**: Seamless fallback to standard routing if VPN or system policies prevent physical Wi-Fi interface binding.
 - **Non-Interference Standby Mode**: Automatically pauses keepalive, releases WakeLocks, and cancels wake alarms on home/external Wi-Fi networks; automatically resumes when you reconnect to campus Wi-Fi.
 - **In-App Diagnostic Logs**: Live timestamped log viewer with level filtering, keyword search, 1-tap copy, and Android system export sheet.
-- **First-Launch Background Permission Onboarding**: Interactive first-run dialog requesting unrestricted battery optimization, notifications, and alarms so keepalive works out of the box.
-- **Universal Multi-Vendor Android Support**: Multi-OEM autostart resolver supporting Xiaomi (HyperOS/MIUI), Samsung (OneUI), Oppo/Realme/OnePlus (ColorOS), Vivo/iQOO, Huawei/Honor, Asus, and Transsion. Hides autostart settings cleanly on pure stock Android (Google Pixel, Motorola).
-- **Screen-Off Keepalive (Continuous WakeLock & WifiLock)**: Holds non-reference-counted `PARTIAL_WAKE_LOCK` and low-latency `WifiLock` to prevent CPU sleep and Wi-Fi radio sleep when device is locked.
-- **Exact RTC Watchdog Heartbeat**: Dual-redundant `AlarmManager.setExactAndAllowWhileIdle` ticking every 60s to wake the device even through deep Doze.
-- **Captive Portal Validation & Mobile Data Bypass**: Explicitly binds network calls to the Wi-Fi `SocketFactory` to bypass cellular fallback, and calls `reportNetworkConnectivity(true)` to dismiss Android's "Sign in to network" banner.
-- **Interactive Permissions System**: Visual setup cards and dialogs for Notifications, Battery Optimization, and Exact Alarms.
 - **Quick Settings Tile**: Add the **PESU WiFi** tile to your notification pull-down shade for instant 1-tap toggle.
-- **Hardware-Backed Credential Storage**: Encrypted with Android Jetpack `EncryptedSharedPreferences` (AES-256).
+- **Hardware-Backed Credential Storage**: Encrypted with Android Jetpack `EncryptedSharedPreferences` (AES-256 GCM) backed by Android Keystore.
 - **Multi-Account Switching**: Store multiple student/faculty accounts and easily switch active users with a single tap.
 - **Desktop JSON Import/Export**: Directly paste or export `config.json` compatible with the desktop `pesu-wifi` CLI.
 
@@ -39,8 +39,8 @@ Native Android companion app for PESU captive portal login, session management, 
 - **UI Toolkit**: Jetpack Compose + Material 3
 - **Network Engine**: OkHttp 4.12 (direct Wi-Fi `SocketFactory` binding, `Proxy.NO_PROXY`, zero-idle pool)
 - **Security**: AndroidX Security Crypto (`MasterKey` AES-256-GCM / AES-256-SIV)
-- **Background Engine**: Android Foreground Service (`dataSync` type, Android 14 compliant)
-- **WakeLock & Watchdog**: `PowerManager.PARTIAL_WAKE_LOCK`, `WifiManager.WifiLock`, `AlarmManager` exact RTC alarms
+- **Background Engine**: Android Foreground Service (`dataSync` type, Android 14+ compliant)
+- **WakeLock & Watchdog**: `PowerManager.PARTIAL_WAKE_LOCK`, `WifiManager.WifiLock`, `AlarmManager` exact RTC alarms (120s &plusmn;30s jitter)
 - **Quick Settings**: Android `TileService`
 
 ---
@@ -83,10 +83,10 @@ adb install -r app/build/outputs/apk/beta/release/app-beta-release.apk
 ## 📱 Quick Setup Guide for Students
 
 1. **Download & Install**:
-   - Download the latest **[Stable APK (v1.6.1)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)**.
+   - Download the latest **[Stable APK (v1.7.0)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)**.
    - If prompted by your browser or files app, tap **Allow from this source** to permit sideload installation.
 2. **Permissions on First Launch**:
-   - **Notifications**: Tap **Allow** (displays ongoing connection status and quick Disconnect action).
+   - **Notifications**: Tap **Allow** (displays ongoing connection status and keepalive heartbeat).
    - **Unrestricted Battery**: Tap **Whitelist** to stop Android from freezing the keepalive heartbeat when your screen is locked.
 3. **Manufacturer Battery Settings (Crucial for 24/7 Background Keepalive)**:
    - **Vivo / iQOO**: Phone Settings → Apps → PESU WiFi → Battery → Select **"Allow high background power consumption"** (or Unrestricted). In the app, tap *"Already set in Settings? Confirm"*.
@@ -102,6 +102,7 @@ adb install -r app/build/outputs/apk/beta/release/app-beta-release.apk
 ## Release History & Changelog
 
 See [**CHANGELOG.md**](CHANGELOG.md) for full commit-by-commit technical breakdowns:
+- [**v1.7.0**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.0) — Smart strongest AP scanning & prioritized connection, dynamic dual-gateway probing (EC Campus & Amaatra), 120s &plusmn;30s jittered keepalive daemon, updated earthy launcher icons, and minimalist GitHub Pages landing page.
 - [**v1.6.1**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.6.1) — OEM external battery whitelist manual override, first-launch permissions cold-boot prompt, top bar UI declutter, and internal service hardening.
 - [**v1.6.0**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.6.0) — Unified Android system call AP switching (v1.5) with continuous 60s keepalive engine (v1.4), RouterPing ICMP/TCP reachability verification, Android 16 (API 36) compatibility, and 16 KB page-aligned packaging.
 - [**v1.5.0**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.5.0) — Campus AP scale, Cyberoam DoS lockout protection, 1-tap debounced account switching, and resilient auto-reconnect.
