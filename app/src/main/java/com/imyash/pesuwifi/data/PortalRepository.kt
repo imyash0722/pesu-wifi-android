@@ -196,46 +196,36 @@ class PortalRepository(
     }
 
     fun resolvePortalBase(wifiNet: Network? = null): String {
-        val gw = getDefaultGateway(wifiNet)
+        // 1. If dynamically detected via redirect or active candidate probe on this connection, reuse it
+        PortalApi.detectedPortalBase?.let { return it }
 
-        // 1. If dynamically detected via redirect or active candidate probe:
-        // Use it only if we don't have a contradicting known gateway
-        PortalApi.detectedPortalBase?.let { detected ->
-            if (gw == null || detected.contains(gw)) {
-                return detected
-            }
-            // Subnet changed, invalidate stale detection
-            PortalApi.detectedPortalBase = null
-        }
+        val gw = getDefaultGateway(wifiNet)
 
         // 2. Gateway-specific matching
         if (gw != null) {
+            // Amaatra Hostel gateway
             if (gw == "172.16.1.1" || gw.startsWith("172.16.")) {
                 return "http://$gw:8090"
             }
-            if (gw.startsWith("192.168.254.")) {
+            // PESU EC/RR direct gateway or internal 10.* VLAN routing -> Cyberoam is at 192.168.254.1:8090
+            if (gw.startsWith("192.168.254.") || gw.startsWith("10.")) {
                 return PortalApi.DEFAULT_PORTAL_BASE
             }
             if (gw == "192.168.1.1") {
                 return PortalApi.AMAATRA_LEGACY_BASE
-            }
-            if (gw.startsWith("10.")) {
-                return "http://$gw:8090"
             }
         }
 
         // 3. Fallback: check SSID match if SSID is known
         val ssid = getCurrentWifiSsid(wifiNet)
         if (ssid != null && ssid.equals("AMAATRA-HOSTEL", ignoreCase = true)) {
-            return if (gw != null) "http://$gw:8090" else PortalApi.AMAATRA_PORTAL_BASE
+            return if (gw != null && gw.startsWith("172.16.")) "http://$gw:8090" else PortalApi.AMAATRA_PORTAL_BASE
+        }
+        if (ssid != null && (ssid.contains("PESU", ignoreCase = true) || ssid.equals("Foodcourt", ignoreCase = true) || ssid.equals("pes south cafe", ignoreCase = true))) {
+            return PortalApi.DEFAULT_PORTAL_BASE
         }
 
-        // 4. If gateway exists and is private RFC-1918, default to http://$gw:8090
-        if (gw != null && (gw.startsWith("192.168.") || gw.startsWith("172.") || gw.startsWith("10."))) {
-            return "http://$gw:8090"
-        }
-
-        // 5. Default fallback
+        // 4. Default fallback: EC/RR campus Cyberoam gateway
         return PortalApi.DEFAULT_PORTAL_BASE
     }
 

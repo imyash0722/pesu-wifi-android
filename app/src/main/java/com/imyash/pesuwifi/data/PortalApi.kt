@@ -135,9 +135,9 @@ object PortalApi {
 
         // 2. Candidate gateways to dynamically probe
         val candidates = linkedSetOf<String>().apply {
-            addAll(additionalCandidates)
-            add(AMAATRA_PORTAL_BASE)
             add(DEFAULT_PORTAL_BASE)
+            add(AMAATRA_PORTAL_BASE)
+            addAll(additionalCandidates)
             add(AMAATRA_LEGACY_BASE)
         }.filter { it != portalBaseUrl }
 
