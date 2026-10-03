@@ -98,6 +98,7 @@ class WifiKeepaliveService : Service() {
     private var lastGateway: String? = null
     private var lastFastAuthIp: String? = null
     private var lastFastAuthTime: Long = 0L
+    private var lastRoamTimestamp: Long = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -382,6 +383,17 @@ class WifiKeepaliveService : Service() {
                     reportConnectivityValidated()
                     logScanResults(false)
                 } else {
+                    val caps = activeWifiNetwork?.let { connectivityManager.getNetworkCapabilities(it) }
+                    val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+                    val isCaptive = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
+                    if (isValidated && !isCaptive) {
+                        AppLogger.d(TAG, "NetworkCapabilities reports VALIDATED and not CAPTIVE_PORTAL. Skipping re-authentication.")
+                        consecutiveFailureCount = 0
+                        authBackoffUntilTimestamp = 0L
+                        reportConnectivityValidated()
+                        return
+                    }
+
                     if (isAuthBackoffActive) {
                         val remainingSec = ((authBackoffUntilTimestamp - SystemClock.elapsedRealtime()) / 1000).coerceAtLeast(1)
                         AppLogger.w(TAG, "Auth backoff active (${remainingSec}s remaining): skipping automatic re-login to avoid rate limits.")
@@ -407,11 +419,13 @@ class WifiKeepaliveService : Service() {
                                     60_000L // 60s cooldown for invalid credentials
                                 } else if (err.contains("account", ignoreCase = true) || err.contains("lock", ignoreCase = true)) {
                                     30_000L // 30s auto-expiring cooldown for temporary server lock
+                                } else if (err.contains("unreachable", ignoreCase = true) || err.contains("timeout", ignoreCase = true) || err.contains("failed to connect", ignoreCase = true)) {
+                                    15_000L // 15s cooldown for unreachable portal to avoid continuous connection timeout storms
                                 } else {
-                                    2_000L // Fast 2s retry for transient network/socket/DHCP errors during handover
+                                    5_000L // 5s retry for transient network/socket/DHCP errors during handover
                                 }
                                 authBackoffUntilTimestamp = SystemClock.elapsedRealtime() + cooldownMs
-                                if (cooldownMs > 2000L) {
+                                if (cooldownMs > 5000L) {
                                     AppLogger.w(TAG, "Auth backoff active for ${cooldownMs / 1000}s. Automatic retries paused temporarily.")
                                 }
                             }
@@ -782,6 +796,7 @@ class WifiKeepaliveService : Service() {
 
         val bssidChanged = currentBssid != null && lastBssid != null && currentBssid != lastBssid
         if (bssidChanged) {
+            lastRoamTimestamp = SystemClock.elapsedRealtime()
             AppLogger.roam(TAG, "AP ROAM DETECTED: Physical router changed! BSSID '$lastBssid' -> '$currentBssid' (SSID: '$currentSsid', RSSI: ${currentRssi}dBm, Ch: ${frequencyToChannel(currentFreq)})")
             lastBssid = currentBssid
             if (!currentSsid.isNullOrBlank()) {
@@ -833,6 +848,7 @@ class WifiKeepaliveService : Service() {
         val isCampusIp = currentIps.any { it.startsWith("10.") || it.startsWith("172.16.") }
 
         if (ipChanged || gatewayChanged) {
+            lastRoamTimestamp = SystemClock.elapsedRealtime()
             AppLogger.roam(TAG, "NETWORK ROUTE CHANGED: IPs: $lastIpAddresses -> $currentIps, Gateway: $lastGateway -> $defaultGateway. Triggering roam recovery...")
             lastIpAddresses = currentIps
             lastGateway = defaultGateway
@@ -1028,6 +1044,7 @@ class WifiKeepaliveService : Service() {
     }
 
     private fun handleRoamingEvent(network: Network) {
+        lastRoamTimestamp = SystemClock.elapsedRealtime()
         PortalApi.evictConnectionPool()
         authBackoffUntilTimestamp = 0L
         consecutiveFailureCount = 0
@@ -1047,16 +1064,18 @@ class WifiKeepaliveService : Service() {
         val status = portalRepository.statusFlow.value
         val isCampus = status.isPesuWifi || isCampusNetworkActive()
         val isWatchdogSearching = autoReconnectWatchdogJob?.isActive == true
-        val isRoamingHandoff = isCampus && !status.isPortalOnline && status.isWifiConnected
-        val isRoamingReconnecting = isWatchdogSearching || isRoamingHandoff
+        val isRecentRoam = (SystemClock.elapsedRealtime() - lastRoamTimestamp) < 8_000L
+        val isRoamingHandoff = isCampus && isRecentRoam && !status.isLoggedIn && status.isWifiConnected
         val isExternalWifi = status.isWifiConnected && !isCampus
 
         val title = when {
-            isRoamingReconnecting -> "PESU WiFi: Roaming..."
+            status.isLoggedIn -> "PESU WiFi: Active"
+            isWatchdogSearching -> "PESU WiFi: Searching..."
+            isRoamingHandoff -> "PESU WiFi: Roaming..."
             isExternalWifi -> "PESU WiFi: Paused"
             isAuthBackoffActive -> "PESU WiFi: Login Paused"
             !status.isWifiConnected -> "PESU WiFi: Disconnected"
-            status.isLoggedIn -> "PESU WiFi: Active"
+            !status.isPortalOnline && isCampus -> "PESU WiFi: Portal Unreachable"
             else -> "PESU WiFi: Logged Out"
         }
 
@@ -1067,12 +1086,13 @@ class WifiKeepaliveService : Service() {
         }
 
         val content = when {
+            status.isLoggedIn -> "Logged in as ${status.activeUsername ?: "active"}"
             isWatchdogSearching -> "Searching for nearby access point..."
             isRoamingHandoff -> "Switching access point..."
             isExternalWifi -> externalContent
             isAuthBackoffActive -> "Temporary login pause. Retrying shortly..."
             !status.isWifiConnected -> "Waiting for Wi-Fi connection..."
-            status.isLoggedIn -> "Logged in as ${status.activeUsername ?: "active"}"
+            !status.isPortalOnline && isCampus -> "Campus login portal is unresponsive. Retrying..."
             else -> "Session inactive on PESU Wi-Fi. Tap to login."
         }
 

@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.7.2 — Minimalist Unified UI & AP Roaming Notification Fix](#v172--minimalist-unified-ui--ap-roaming-notification-fix)
+  - [Overview & Major Highlights](#v172-overview--major-highlights)
 - [v1.7.1 — Amaatra Hostel 172.16.1.1 Gateway Resolution & Modern Android SSID Unmasking](#v171--amaatra-hostel-1721611-gateway-resolution--modern-android-ssid-unmasking)
   - [Overview & Major Highlights](#v171-overview--major-highlights)
 - [v1.7.0 — Smart Strongest AP Roaming, Dynamic Gateway Probing & 120s Jittered Keepalive](#v170--smart-strongest-ap-roaming-dynamic-gateway-probing--120s-jittered-keepalive)
@@ -39,6 +41,36 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.7.2 — Minimalist Unified UI & AP Roaming Notification Fix
+
+**Release Date:** October 3, 2026  
+**Git Tag:** [`v1.7.2`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.2)  
+**Release Type:** UI/UX Redesign & Core Keepalive Bugfix  
+**APK Assets:**  
+- `pesu-wifi-v1.7.2-stable.apk` (Production / Stable track)  
+- `pesu-wifi-v1.7.2-tester.apk` (Tester track with universal diagnostic logs & telemetry)  
+
+### v1.7.2 Overview & Major Highlights
+
+- **🎯 Minimalist Unified Action & Credential Pill**:
+  - Replaced the dual-button arrangement (separate account chip + primary connect button) with a single, unified 56dp action pill.
+  - Left-aligned connect/disconnect action arrow icon (with dedicated circular ripple touch target) connects or disconnects the session with 1 tap.
+  - Left-aligned credential username displays the active account; tapping anywhere on the pill body opens the account management and credential selection page.
+  - Decluttered the Home screen by removing the redundant top header text (leaving clean icon buttons), removing the status pill chip, and removing the background keepalive text.
+  - Home screen is now laser-focused: animated WiFi hero icon, status headline, status message, unified action pill, latency indicator, and version string.
+- **🔄 False AP Roaming / "Switching access point..." Notification Fix**:
+  - Resolved an issue on Android 16 and campus VLANs where notifications became permanently stuck displaying `"PESU WiFi: Roaming... / Switching access point..."` while stationary on the same AP.
+  - Replaced the naive `!status.isPortalOnline` heuristic with actual physical roaming transition tracking (`isRecentRoam`, measuring BSSID changes within 8s).
+  - Prioritized `status.isLoggedIn` over roaming in foreground notifications so authenticated devices never display roaming warnings.
+  - Updated notification to report `"PESU WiFi: Portal Unreachable"` with `"Campus login portal is unresponsive. Retrying..."` when port 8090 drops on campus while unauthenticated.
+- **🌐 Internet Validation Priority & Unresponsive Port 8090 Handling**:
+  - When Cyberoam port 8090 is slow or dropped by campus firewall on authenticated connections, `PortalRepository.refreshStatus()` now inspects `NET_CAPABILITY_VALIDATED` and `generate_204` connectivity, preserving `isLoggedIn = true` and avoiding false session invalidation.
+  - Suppressed redundant re-authentication attempts in `WifiKeepaliveService` and `WifiWakeupReceiver` when the operating system confirms internet traffic is already validated and non-captive.
+  - Extended re-authentication cooldown to 15s for unreachable portal timeouts to avoid continuous connection timeout storms.
+  - Filtered out internal switch IPs (`10.*`) from candidate gateway probe lists, eliminating wasted probe latency on campus VLANs.
 
 ---
 

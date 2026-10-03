@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -62,6 +64,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -165,13 +168,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        text = "PESU WiFi",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
+                title = {},
                 actions = {
                     IconButton(
                         onClick = { viewModel.refresh() },
@@ -269,116 +266,86 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(36.dp))
 
-            // Status pill chip
-            val pillColor = if (isExternalWifi) MaterialTheme.colorScheme.primary else statusColor
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50.dp))
-                    .background(pillColor.copy(alpha = 0.12f))
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(pillColor)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = when {
-                        !state.status.isWifiConnected -> "Disconnected"
-                        isExternalWifi -> "External Wi-Fi"
-                        !state.status.isPortalOnline -> "Gateway unreachable"
-                        isLoggedIn -> "Authenticated"
-                        isConnected -> "Connected, not logged in"
-                        else -> "Connecting..."
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = pillColor
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // ── Active account chip ────────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50.dp))
-                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f))
-                    .clickable {
-                        if (state.accounts.isNotEmpty()) onNavigateToAccounts()
-                        else showAddAccountDialog = true
-                    }
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = state.activeUser ?: "Add account",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = if (state.accounts.isNotEmpty()) Icons.Default.ChevronRight else Icons.Default.Add,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── Primary action button ─────────────────────────────────────
-            Button(
-                onClick = {
-                    if (isLoggedIn) viewModel.logout() else viewModel.connectAndLogin()
-                },
+            // ── Unified Connection & Account Button ──────────────────────
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isLoggedIn) StatusRed else MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
-                ),
-                enabled = !state.isLoading && state.accounts.isNotEmpty()
+                color = if (isLoggedIn) StatusRed else MaterialTheme.colorScheme.primary,
+                contentColor = Color.White,
+                shadowElevation = 2.dp
             ) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        color = Color.White,
-                        strokeWidth = 2.5.dp
-                    )
-                } else {
-                    Icon(
-                        imageVector = if (isLoggedIn) Icons.AutoMirrored.Filled.Logout else Icons.AutoMirrored.Filled.Login,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = ripple(),
+                            enabled = true
+                        ) {
+                            if (state.accounts.isNotEmpty()) onNavigateToAccounts()
+                            else showAddAccountDialog = true
+                        }
+                        .padding(start = 6.dp, end = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Left-aligned connect/disconnect action icon with circular ripple
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = ripple(bounded = true, radius = 22.dp),
+                                enabled = !state.isLoading && state.accounts.isNotEmpty()
+                            ) {
+                                if (isLoggedIn) viewModel.logout() else viewModel.connectAndLogin()
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (state.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(22.dp),
+                                color = Color.White,
+                                strokeWidth = 2.5.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = if (isLoggedIn) Icons.AutoMirrored.Filled.Logout else Icons.AutoMirrored.Filled.Login,
+                                contentDescription = if (isLoggedIn) "Disconnect" else "Connect",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
                     Spacer(modifier = Modifier.width(10.dp))
+
+                    // Left-aligned credential username
                     Text(
-                        text = if (isLoggedIn) "Disconnect" else "Connect",
-                        fontSize = 16.sp,
+                        text = state.activeUser ?: "Add account",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Trailing icon indicating account navigation
+                    Icon(
+                        imageVector = if (state.accounts.isNotEmpty()) Icons.Default.ChevronRight else Icons.Default.Add,
+                        contentDescription = "Switch Account",
+                        tint = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Latency indicator below button
             if (state.status.latencyMs != null && isLoggedIn) {
@@ -389,40 +356,10 @@ fun HomeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // ── Background Keepalive status (Default / Always Active) ─────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Sync,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = if (state.isDaemonRunning) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text(
-                        text = "Background Keepalive",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = if (state.isDaemonRunning) "Continuous 120s keepalive active (±30s jitter)" else "Starting keepalive daemon...",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
             // Tester build only: persistent PermissionsCard for easy debug access
             if (BuildConfig.SHOW_PERMISSIONS_SECTION &&
                 (!state.permissionState.allEssentialGranted || state.permissionState.hasAutostartSettings)) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 PermissionsCard(
                     permissionState = state.permissionState,
                     onRequestNotification = onRequestNotification,
@@ -438,7 +375,7 @@ fun HomeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(32.dp))
             Text(
                 text = "PESU WiFi v${BuildConfig.VERSION_NAME}",
                 style = MaterialTheme.typography.bodySmall,

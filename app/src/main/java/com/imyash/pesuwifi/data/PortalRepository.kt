@@ -264,7 +264,7 @@ class PortalRepository(
         val currentSsid = getCurrentWifiSsid(wifiNet)
         val isCampus = isCampusNetwork(wifiNet)
 
-        val candidateGateways = listOfNotNull(gw?.let { "http://$it:8090" })
+        val candidateGateways = listOfNotNull(gw?.takeIf { !it.startsWith("10.") }?.let { "http://$it:8090" })
         val start = System.currentTimeMillis()
         val portalUp = api.isPortalOnline(candidateGateways)
         val latency = System.currentTimeMillis() - start
@@ -279,7 +279,31 @@ class PortalRepository(
 
         if (!portalUp) {
             if (isCampus) {
-                // Connected to campus AP, but gateway probe failed (roaming, packet drop, or VPN routing RFC-1918)
+                // Connected to campus AP, but gateway probe failed (port 8090 blocked/slow or packet drop)
+                // Check if device already has active internet access (e.g. NET_CAPABILITY_VALIDATED or generate_204)
+                val caps = connectivityManager?.getNetworkCapabilities(wifiNet)
+                val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+                val isCaptive = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
+
+                val isInternetUp = (isValidated && !isCaptive) || (api.verifyInternetConnectivity() == PortalApi.InternetProbeResult.ONLINE)
+                if (isInternetUp) {
+                    consecutiveProbeFailures = 0
+                    val status = PortalStatus(
+                        isWifiConnected = true,
+                        isPesuWifi = true,
+                        isPortalOnline = false,
+                        isLoggedIn = true,
+                        activeUsername = activeUser,
+                        latencyMs = latency,
+                        lastCheckedTimestamp = System.currentTimeMillis(),
+                        statusMessage = "Connected as ${activeUser ?: "active session"}"
+                    )
+                    _statusFlow.value = status
+                    AppLogger.i("PortalRepository", "refreshStatus: Gateway port 8090 unresponsive, but internet connectivity is VALIDATED & ONLINE. Preserving loggedIn=true.")
+                    return@withContext status
+                }
+
+                // Truly offline or captive portal
                 val status = PortalStatus(
                     isWifiConnected = true,
                     isPesuWifi = true, // Preserve campus classification so keepalive loop does not terminate
@@ -291,7 +315,7 @@ class PortalRepository(
                     statusMessage = "PESU Wi-Fi: Gateway probe unreachable (roaming or VPN active)"
                 )
                 _statusFlow.value = status
-                AppLogger.roam("PortalRepository", "refreshStatus: Campus network active (SSID='$currentSsid', IP='${localIp?.hostAddress}'), but gateway unreachable. Preserving campus mode (latency ${latency}ms)")
+                AppLogger.roam("PortalRepository", "refreshStatus: Campus network active (SSID='$currentSsid', IP='${localIp?.hostAddress}'), but gateway unreachable and internet offline. Preserving campus mode (latency ${latency}ms)")
                 return@withContext status
             } else {
                 // Truly external Wi-Fi (Home, Hotspot, Office) where PESU gateway does not exist
@@ -339,6 +363,13 @@ class PortalRepository(
                 }
             }
         } else {
+            val caps = connectivityManager?.getNetworkCapabilities(wifiNet)
+            val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
+            val isCaptive = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
+            if (isValidated && !isCaptive) {
+                AppLogger.i("PortalRepository", "refreshStatus: checkLive returned false for '$targetUser', but Android confirms network is VALIDATED. Preserving loggedIn=true.")
+                loggedIn = true
+            }
             consecutiveProbeFailures = 0
         }
 

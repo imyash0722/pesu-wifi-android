@@ -123,8 +123,9 @@ class WifiWakeupReceiver : BroadcastReceiver() {
 
             val isCampus = portalRepo.isCampusNetwork(network)
             val isCaptivePortal = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
+            val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
 
-            AppLogger.i(TAG, "OS Event: SSID='$currentSsid', BSSID='$currentBssid', isCampus=$isCampus, isCaptivePortal=$isCaptivePortal")
+            AppLogger.i(TAG, "OS Event: SSID='$currentSsid', BSSID='$currentBssid', isCampus=$isCampus, isCaptivePortal=$isCaptivePortal, isValidated=$isValidated")
 
             if (isCampus) {
                 val pingOk = RouterPing.pingGateway(gateway, network = network)
@@ -134,16 +135,20 @@ class WifiWakeupReceiver : BroadcastReceiver() {
                 val activeUser = accountRepo.getActiveUser()
 
                 if ((!status.isLoggedIn || isCaptivePortal) && activeUser != null) {
-                    AppLogger.i(TAG, "Campus network active (isLoggedIn=${status.isLoggedIn}, isCaptivePortal=$isCaptivePortal): auto-authenticating as $activeUser")
-                    val result = portalRepo.login(activeUser)
-                    if (result.isSuccess) {
-                        AppLogger.i(TAG, "Auto-authentication SUCCESS for $activeUser via OS wakeup rule!")
-                        try {
-                            network?.let { cm.reportNetworkConnectivity(it, true) }
-                        } catch (_: Exception) {
-                        }
+                    if (isValidated && !isCaptivePortal) {
+                        AppLogger.i(TAG, "Network is already VALIDATED and online. Skipping auto-authentication.")
                     } else {
-                        AppLogger.w(TAG, "Auto-authentication failed: ${result.exceptionOrNull()?.message}")
+                        AppLogger.i(TAG, "Campus network active (isLoggedIn=${status.isLoggedIn}, isCaptivePortal=$isCaptivePortal, isValidated=$isValidated): auto-authenticating as $activeUser")
+                        val result = portalRepo.login(activeUser)
+                        if (result.isSuccess) {
+                            AppLogger.i(TAG, "Auto-authentication SUCCESS for $activeUser via OS wakeup rule!")
+                            try {
+                                network?.let { cm.reportNetworkConnectivity(it, true) }
+                            } catch (_: Exception) {
+                            }
+                        } else {
+                            AppLogger.w(TAG, "Auto-authentication failed: ${result.exceptionOrNull()?.message}")
+                        }
                     }
                 } else if (status.isLoggedIn) {
                     AppLogger.d(TAG, "Campus session confirmed active as ${status.activeUsername}")
