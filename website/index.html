@@ -4,48 +4,63 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="PESU WiFi - Seamless captive portal auto-login and background keepalive for PES University campus Wi-Fi.">
-  <meta name="theme-color" content="#090D16">
+  <meta name="theme-color" content="#675647">
 
   <title>PESU WiFi for Android</title>
 
   <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
-  <link rel="stylesheet" href="./css/style.css?v=3">
+  <link rel="stylesheet" href="./css/style.css?v=4">
 
   <style>
-    /* Inlined styles to guarantee instant rendering and bypass any stale browser CSS cache */
+    /* "STUDY HARD" Palette Implementation
+       Primary: #675647 | Primary: #E3BD90 | Neutral: #DFD3B5
+       Neutral: #C0BDBC | Accent: #6C6E36  | Text: #3B3B3B
+    */
     :root {
-      --bg: #090D16;
-      --surface: #111827;
-      --surface-border: #1F2937;
-      --text: #F8FAFC;
-      --text-muted: #94A3B8;
-      --primary: #2563EB;
-      --primary-hover: #1D4ED8;
-      --badge-bg: #1E293B;
-      --badge-border: #334155;
-      --btn-secondary-bg: #1E293B;
-      --btn-secondary-border: #334155;
-      --btn-secondary-text: #F8FAFC;
-      --btn-secondary-hover: #334155;
-      --shadow-mockup: drop-shadow(0 25px 40px rgba(0, 0, 0, 0.6));
+      --bg: #FAF7F2;
+      --surface: #F2EDE4;
+      --surface-border: #DFD3B5;
+      --text: #3B3B3B;
+      --text-muted: #675647;
+      --brand-title: #675647;
+      --badge-bg: #E3BD90;
+      --badge-border: #D1A774;
+      --badge-text: #2E251E;
+      --btn-primary-bg: #6C6E36;
+      --btn-primary-hover: #585A2A;
+      --btn-primary-text: #FFFFFF;
+      --btn-primary-shadow: 0 6px 18px rgba(108, 110, 54, 0.35);
+      --btn-secondary-bg: #EFE8DA;
+      --btn-secondary-border: #C0BDBC;
+      --btn-secondary-text: #3B3B3B;
+      --btn-secondary-hover: #DFD3B5;
+      --footer-text: #675647;
+      --footer-border: #DFD3B5;
+      --shadow-mockup: drop-shadow(0 20px 30px rgba(103, 86, 71, 0.22));
     }
 
-    @media (prefers-color-scheme: light) {
+    @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #F8FAFC;
-        --surface: #FFFFFF;
-        --surface-border: #E2E8F0;
-        --text: #0F172A;
-        --text-muted: #64748B;
-        --primary: #2563EB;
-        --primary-hover: #1D4ED8;
-        --badge-bg: #EFF6FF;
-        --badge-border: #DBEAFE;
-        --btn-secondary-bg: #F1F5F9;
-        --btn-secondary-border: #CBD5E1;
-        --btn-secondary-text: #0F172A;
-        --btn-secondary-hover: #E2E8F0;
-        --shadow-mockup: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.15));
+        --bg: #1B1714;
+        --surface: #26201B;
+        --surface-border: #3D352E;
+        --text: #F2EDE4;
+        --text-muted: #DFD3B5;
+        --brand-title: #E3BD90;
+        --badge-bg: #2E2721;
+        --badge-border: #675647;
+        --badge-text: #E3BD90;
+        --btn-primary-bg: #6C6E36;
+        --btn-primary-hover: #7E8140;
+        --btn-primary-text: #FFFFFF;
+        --btn-primary-shadow: 0 6px 22px rgba(108, 110, 54, 0.45);
+        --btn-secondary-bg: #29231E;
+        --btn-secondary-border: #4D4238;
+        --btn-secondary-text: #DFD3B5;
+        --btn-secondary-hover: #38302A;
+        --footer-text: #C0BDBC;
+        --footer-border: #38302A;
+        --shadow-mockup: drop-shadow(0 25px 40px rgba(0, 0, 0, 0.65));
       }
     }
 
@@ -93,7 +108,7 @@
       height: 58px;
       border-radius: 14px;
       flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      box-shadow: 0 6px 14px rgba(103, 86, 71, 0.25);
     }
 
     .brand-title {
@@ -101,18 +116,20 @@
       font-weight: 800;
       letter-spacing: -0.03em;
       line-height: 1.1;
+      color: var(--brand-title);
     }
 
     .badge {
       display: inline-block;
       font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-muted);
+      font-weight: 700;
+      color: var(--badge-text);
       background-color: var(--badge-bg);
       border: 1px solid var(--badge-border);
       padding: 0.2rem 0.65rem;
       border-radius: 999px;
       margin-top: 0.35rem;
+      letter-spacing: 0.02em;
     }
 
     .description {
@@ -145,16 +162,15 @@
     }
 
     .btn-primary {
-      background-color: var(--primary);
-      color: #FFFFFF !important;
+      background-color: var(--btn-primary-bg);
+      color: var(--btn-primary-text) !important;
       border: 1px solid transparent;
-      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      box-shadow: var(--btn-primary-shadow);
     }
 
     .btn-primary:hover {
-      background-color: var(--primary-hover);
+      background-color: var(--btn-primary-hover);
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
     }
 
     .btn-secondary {
@@ -190,20 +206,20 @@
       align-items: center;
       gap: 0.6rem;
       font-size: 0.85rem;
-      color: var(--text-muted);
-      border-top: 1px solid var(--surface-border);
+      color: var(--footer-text);
+      border-top: 1px solid var(--footer-border);
       padding-top: 1.5rem;
     }
 
     .footer a {
-      color: var(--text-muted);
+      color: var(--footer-text);
       text-decoration: none;
-      transition: color 0.15s ease;
+      transition: opacity 0.15s ease;
     }
 
     .footer a:hover {
-      color: var(--text);
       text-decoration: underline;
+      opacity: 0.85;
     }
 
     @media (max-width: 768px) {
