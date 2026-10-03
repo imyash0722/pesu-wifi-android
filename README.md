@@ -4,8 +4,9 @@ Native Android companion app for PESU captive portal login, session management, 
 
 [![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)
 [![Website](https://img.shields.io/badge/Website-GitHub_Pages-6C6E36.svg)](https://imyash0722.github.io/pesu-wifi-android/)
-[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.7.2-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.2/pesu-wifi-v1.7.2-stable.apk)
-[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.7.2-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.2/pesu-wifi-v1.7.2-tester.apk)
+[![Setup Guide](https://img.shields.io/badge/Setup_Guide-Visual_Instructions-E3BD90.svg)](https://imyash0722.github.io/pesu-wifi-android/instructions.html)
+[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.7.3-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.3/pesu-wifi-v1.7.3-stable.apk)
+[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.7.3-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.3/pesu-wifi-v1.7.3-tester.apk)
 [![Changelog](https://img.shields.io/badge/Changelog-Release_Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -111,7 +112,7 @@ adb install -r app/build/outputs/apk/beta/release/app-beta-release.apk
 ## 📱 Quick Setup Guide for Students
 
 1. **Download & Install**:
-   - Download the latest **[Stable APK (v1.7.2)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)**.
+   - Download the latest **[Stable APK (v1.7.3)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)** or follow our **[Step-by-Step Visual Picture Guide](https://imyash0722.github.io/pesu-wifi-android/instructions.html)**.
    - If prompted by your browser or files app, tap **Allow from this source** to permit sideload installation.
 2. **Permissions on First Launch**:
    - **Notifications**: Tap **Allow** (displays ongoing connection status and keepalive heartbeat).
