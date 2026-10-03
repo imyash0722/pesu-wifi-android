@@ -3,57 +3,292 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="PESU WiFi - Seamless captive portal auto-login and background keepalive for PES University Wi-Fi.">
-  <meta name="theme-color" content="#2563EB">
+  <meta name="description" content="PESU WiFi - Seamless captive portal auto-login and background keepalive for PES University campus Wi-Fi.">
+  <meta name="theme-color" content="#090D16">
 
   <title>PESU WiFi for Android</title>
 
   <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/style.css?v=3">
+
+  <style>
+    /* Inlined styles to guarantee instant rendering and bypass any stale browser CSS cache */
+    :root {
+      --bg: #090D16;
+      --surface: #111827;
+      --surface-border: #1F2937;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --badge-bg: #1E293B;
+      --badge-border: #334155;
+      --btn-secondary-bg: #1E293B;
+      --btn-secondary-border: #334155;
+      --btn-secondary-text: #F8FAFC;
+      --btn-secondary-hover: #334155;
+      --shadow-mockup: drop-shadow(0 25px 40px rgba(0, 0, 0, 0.6));
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #F8FAFC;
+        --surface: #FFFFFF;
+        --surface-border: #E2E8F0;
+        --text: #0F172A;
+        --text-muted: #64748B;
+        --primary: #2563EB;
+        --primary-hover: #1D4ED8;
+        --badge-bg: #EFF6FF;
+        --badge-border: #DBEAFE;
+        --btn-secondary-bg: #F1F5F9;
+        --btn-secondary-border: #CBD5E1;
+        --btn-secondary-text: #0F172A;
+        --btn-secondary-hover: #E2E8F0;
+        --shadow-mockup: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.15));
+      }
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1.5rem;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .hero-layout {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: center;
+      gap: 3.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .brand-icon {
+      width: 58px;
+      height: 58px;
+      border-radius: 14px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .brand-title {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background-color: var(--badge-bg);
+      border: 1px solid var(--badge-border);
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      margin-top: 0.35rem;
+    }
+
+    .description {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+      margin-bottom: 2.25rem;
+      max-width: 480px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 0.85rem 1.6rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #FFFFFF !important;
+      border: 1px solid transparent;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+    }
+
+    .btn-secondary {
+      background-color: var(--btn-secondary-bg);
+      color: var(--btn-secondary-text) !important;
+      border: 1px solid var(--btn-secondary-border);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--btn-secondary-hover);
+      transform: translateY(-2px);
+    }
+
+    .preview {
+      display: flex;
+      justify-content: center;
+    }
+
+    .mockup {
+      max-width: 290px;
+      width: 100%;
+      height: auto;
+      filter: var(--shadow-mockup);
+      transition: transform 0.3s ease;
+    }
+
+    .mockup:hover {
+      transform: translateY(-4px) scale(1.01);
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--surface-border);
+      padding-top: 1.5rem;
+    }
+
+    .footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .footer a:hover {
+      color: var(--text);
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 2rem 1rem;
+      }
+
+      .hero-layout {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 2.5rem;
+      }
+
+      .brand {
+        justify-content: center;
+      }
+
+      .description {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .actions {
+        justify-content: center;
+      }
+
+      .footer {
+        justify-content: center;
+      }
+
+      .mockup {
+        max-width: 250px;
+      }
+    }
+  </style>
 </head>
 <body>
 
-  <main class="card">
-    <div class="brand">
-      <img src="./assets/icon.svg" alt="PESU WiFi Logo" class="brand-icon" width="48" height="48">
-      <div>
-        <h1 class="brand-title">PESU WiFi</h1>
-        <span class="badge">v1.2.0 • Android 10+</span>
-      </div>
-    </div>
+  <div class="container">
+    <main class="hero-layout">
+      <!-- Left Column: Content & Links -->
+      <section class="content">
+        <div class="brand">
+          <img src="./assets/icon.svg" alt="PESU WiFi Logo" class="brand-icon" width="58" height="58">
+          <div>
+            <h1 class="brand-title">PESU WiFi</h1>
+            <span class="badge">v1.2.0 • Android 10+</span>
+          </div>
+        </div>
 
-    <p class="description">
-      Automated captive portal login and background keepalive for PES University campus networks. Connects to the strongest access point, authenticates your account, and prevents session dropouts.
-    </p>
+        <p class="description">
+          Automated captive portal auto-login and background keepalive for PES University campus networks. Connects to the strongest access point, authenticates your account, and prevents session dropouts.
+        </p>
 
-    <div class="actions">
-      <a href="https://github.com/imyash0722/pesu-wifi-android/releases/latest" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="7 10 12 15 17 10"></polyline>
-          <line x1="12" y1="15" x2="12" y2="3"></line>
-        </svg>
-        <span>Download APK</span>
-      </a>
+        <div class="actions">
+          <a href="https://github.com/imyash0722/pesu-wifi-android/releases/latest" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Download APK</span>
+          </a>
 
-      <a href="https://github.com/imyash0722/pesu-wifi-android" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-        </svg>
-        <span>GitHub</span>
-      </a>
-    </div>
+          <a href="https://github.com/imyash0722/pesu-wifi-android" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            <span>GitHub</span>
+          </a>
+        </div>
 
-    <div class="mockup-container">
-      <img src="./assets/mockups/home-screen.svg" alt="PESU WiFi App Interface" class="mockup" width="300" height="620">
-    </div>
+        <footer class="footer">
+          <span>Open Source under GNU GPL-3.0</span>
+          <span>•</span>
+          <a href="https://github.com/imyash0722/pesu-wifi-android/releases" target="_blank" rel="noopener noreferrer">All Releases</a>
+        </footer>
+      </section>
 
-    <footer class="footer">
-      <span>Open Source under GNU GPL-3.0</span>
-      <span>•</span>
-      <a href="https://github.com/imyash0722/pesu-wifi-android/releases" target="_blank" rel="noopener noreferrer">All Releases</a>
-    </footer>
-  </main>
+      <!-- Right Column: App Illustration -->
+      <section class="preview">
+        <img src="./assets/mockups/home-screen.svg" alt="PESU WiFi App Interface" class="mockup" width="290" height="600">
+      </section>
+    </main>
+  </div>
 
 </body>
 </html>

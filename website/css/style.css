@@ -1,35 +1,36 @@
-/* PESU WiFi - Minimalist Landing Page Styles */
-
 :root {
-  --bg: #0B0F19;
+  --bg: #090D16;
   --surface: #111827;
   --surface-border: #1F2937;
-  --text: #F9FAFB;
-  --text-muted: #9CA3AF;
+  --text: #F8FAFC;
+  --text-muted: #94A3B8;
   --primary: #2563EB;
   --primary-hover: #1D4ED8;
-  --secondary-bg: #1F2937;
-  --secondary-hover: #374151;
-  --secondary-border: #374151;
-  --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 24px;
+  --badge-bg: #1E293B;
+  --badge-border: #334155;
+  --btn-secondary-bg: #1E293B;
+  --btn-secondary-border: #334155;
+  --btn-secondary-text: #F8FAFC;
+  --btn-secondary-hover: #334155;
+  --shadow-mockup: drop-shadow(0 25px 40px rgba(0, 0, 0, 0.6));
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #F3F4F6;
+    --bg: #F8FAFC;
     --surface: #FFFFFF;
-    --surface-border: #E5E7EB;
-    --text: #111827;
-    --text-muted: #6B7280;
+    --surface-border: #E2E8F0;
+    --text: #0F172A;
+    --text-muted: #64748B;
     --primary: #2563EB;
     --primary-hover: #1D4ED8;
-    --secondary-bg: #F3F4F6;
-    --secondary-hover: #E5E7EB;
-    --secondary-border: #E5E7EB;
-    --shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.1);
+    --badge-bg: #EFF6FF;
+    --badge-border: #DBEAFE;
+    --btn-secondary-bg: #F1F5F9;
+    --btn-secondary-border: #CBD5E1;
+    --btn-secondary-text: #0F172A;
+    --btn-secondary-hover: #E2E8F0;
+    --shadow-mockup: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.15));
   }
 }
 
@@ -40,145 +41,143 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, -apple-system, sans-serif;
   background-color: var(--bg);
   color: var(--text);
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 1.25rem;
+  padding: 2.5rem 1.5rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
-.card {
+.container {
   width: 100%;
-  max-width: 500px;
-  background-color: var(--surface);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-lg);
-  padding: 2.25rem 2rem 1.75rem;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.hero-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
   align-items: center;
-  text-align: center;
+  gap: 3.5rem;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-  text-align: left;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .brand-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-sm);
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .brand-title {
-  font-size: 1.6rem;
+  font-size: 2.4rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   line-height: 1.1;
 }
 
 .badge {
   display: inline-block;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-muted);
-  letter-spacing: 0.02em;
-  margin-top: 0.2rem;
+  background-color: var(--badge-bg);
+  border: 1px solid var(--badge-border);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  margin-top: 0.35rem;
 }
 
 .description {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   color: var(--text-muted);
-  line-height: 1.55;
-  margin-bottom: 1.75rem;
-  max-width: 420px;
+  line-height: 1.65;
+  margin-bottom: 2.25rem;
+  max-width: 480px;
 }
 
 .actions {
   display: flex;
-  gap: 0.85rem;
-  width: 100%;
-  max-width: 380px;
-  margin-bottom: 2.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
 }
 
 .btn {
-  flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  border-radius: var(--radius-md);
-  font-size: 0.95rem;
+  gap: 0.6rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: 12px;
+  font-size: 1rem;
   font-weight: 600;
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
   white-space: nowrap;
 }
 
 .btn-primary {
   background-color: var(--primary);
-  color: #FFFFFF;
+  color: #FFFFFF !important;
   border: 1px solid transparent;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
 }
 
 .btn-primary:hover {
   background-color: var(--primary-hover);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
 }
 
 .btn-secondary {
-  background-color: var(--secondary-bg);
-  color: var(--text);
-  border: 1px solid var(--secondary-border);
+  background-color: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text) !important;
+  border: 1px solid var(--btn-secondary-border);
 }
 
 .btn-secondary:hover {
-  background-color: var(--secondary-hover);
-  transform: translateY(-1px);
+  background-color: var(--btn-secondary-hover);
+  transform: translateY(-2px);
 }
 
-.mockup-container {
-  width: 100%;
+.preview {
   display: flex;
   justify-content: center;
-  margin-bottom: 1.75rem;
 }
 
 .mockup {
-  max-width: 270px;
+  max-width: 290px;
   width: 100%;
   height: auto;
-  filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.35));
-  transition: transform 0.25s ease;
+  filter: var(--shadow-mockup);
+  transition: transform 0.3s ease;
 }
 
 .mockup:hover {
-  transform: scale(1.02);
+  transform: translateY(-4px) scale(1.01);
 }
 
 .footer {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.6rem;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
   border-top: 1px solid var(--surface-border);
-  padding-top: 1.25rem;
-  width: 100%;
+  padding-top: 1.5rem;
 }
 
 .footer a {
@@ -192,20 +191,35 @@ body {
   text-decoration: underline;
 }
 
-@media (max-width: 480px) {
-  .card {
-    padding: 1.75rem 1.25rem 1.25rem;
+@media (max-width: 768px) {
+  body {
+    padding: 2rem 1rem;
+  }
+
+  .hero-layout {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 2.5rem;
+  }
+
+  .brand {
+    justify-content: center;
+  }
+
+  .description {
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .actions {
-    flex-direction: column;
+    justify-content: center;
   }
 
-  .btn {
-    width: 100%;
+  .footer {
+    justify-content: center;
   }
 
   .mockup {
-    max-width: 230px;
+    max-width: 250px;
   }
 }
