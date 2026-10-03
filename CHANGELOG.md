@@ -5,8 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
-- [v1.5.1 — Unified OS-Level AP Switching, 60s Keepalive Engine & Android 16 Support](#v151--unified-os-level-ap-switching-60s-keepalive-engine--android-16-support)
-  - [Overview & Major Highlights](#v151-overview--major-highlights)
+- [v1.6.0 — Unified OS-Level AP Switching, 60s Keepalive Engine & Android 16 Support](#v160--unified-os-level-ap-switching-60s-keepalive-engine--android-16-support)
+  - [Overview & Major Highlights](#v160-overview--major-highlights)
 - [v1.5.0 — Campus AP Scale, Account Switching Debounce & Resilient Auto-Reconnect](#v150--campus-ap-scale-account-switching-debounce--resilient-auto-reconnect)
   - [Overview & Major Highlights](#v150-overview--major-highlights)
 - [beta-v1.5.0 — Campus AP Scale & Autonomous BSSID Harvesting](#beta-v150--campus-ap-scale--autonomous-bssid-harvesting)
@@ -36,16 +36,16 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 
 ---
 
-## v1.5.1 — Unified OS-Level AP Switching, 60s Keepalive Engine & Android 16 Support
+## v1.6.0 — Unified OS-Level AP Switching, 60s Keepalive Engine & Android 16 Support
 
 **Release Date:** October 3, 2026  
-**Git Tag:** [`v1.5.1`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.5.1)  
+**Git Tag:** [`v1.6.0`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.6.0)  
 **Release Type:** Official Production Release  
 **APK Assets:**  
-- `pesu-wifi-v1.5.1-stable.apk` (Production / Stable track with pre-seeded campus AP catalog)  
-- `pesu-wifi-v1.5.1-tester.apk` (Tester track with full diagnostic logs, telemetry & AP explorer)  
+- `pesu-wifi-v1.6.0-stable.apk` (Production / Stable track with pre-seeded campus AP catalog)  
+- `pesu-wifi-v1.6.0-tester.apk` (Tester track with full diagnostic logs, telemetry & AP explorer)  
 
-### v1.5.1 Overview & Major Highlights
+### v1.6.0 Overview & Major Highlights
 
 - **🤝 Unified Architecture (1.5 OS System Calls + 1.4 Continuous 60s Keepalive)**:
   - Combined OS-level `WifiNetworkSuggestion` (18 suggestion profiles across 9 campus SSIDs), system-persistent `ConnectivityManager.registerNetworkCallback` `PendingIntent`, and `JobScheduler` fallback with the persistent 60-second foreground service keepalive (`WifiKeepaliveService`).
