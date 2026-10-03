@@ -112,7 +112,8 @@ class PortalRepository(
     fun isCampusSsid(ssid: String?): Boolean {
         if (ssid.isNullOrBlank()) return false
         val clean = ssid.replace("\"", "").trim()
-        return clean.contains("PESU", ignoreCase = true)
+        if (clean.contains("PESU", ignoreCase = true)) return true
+        return CAMPUS_SSIDS.any { it.equals(clean, ignoreCase = true) }
     }
 
     /**
@@ -121,7 +122,7 @@ class PortalRepository(
      * 2. If SSID is redacted/unknown (e.g. during AP roaming handoffs or Android 12 location policy),
      *    check if this active connection was recently verified as campus Wi-Fi.
      * 3. If SSID is redacted and no recent cache, check campus-specific network infrastructure:
-     *    Cyberoam gateway (192.168.254.*) or PESU internal DNS (192.168.3.2).
+     *    Cyberoam gateway (192.168.254.*, 10.*), internal DNS (192.168.3.*), or campus IPs.
      */
     fun isCampusNetwork(wifiNet: Network? = null): Boolean {
         val net = wifiNet ?: getWifiNetwork() ?: return false
@@ -169,21 +170,30 @@ class PortalRepository(
         val lp = connectivityManager?.getLinkProperties(net)
         if (lp != null) {
             val gw = lp.routes.firstOrNull { it.isDefaultRoute }?.gateway?.hostAddress
-            if (gw != null && gw.startsWith("192.168.254.")) {
-                lastConfirmedCampusNetwork = net
-                lastConfirmedCampusTime = now
-                return true
-            }
-
             val dns = lp.dnsServers.mapNotNull { it.hostAddress }
-            if (dns.contains("192.168.3.2")) {
+            val domains = lp.domains ?: ""
+            val ips = lp.linkAddresses.mapNotNull { it.address?.hostAddress }
+
+            val isCampusInfrastructure = (gw != null && (gw.startsWith("192.168.254.") || gw.startsWith("10."))) ||
+                    dns.any { it.startsWith("192.168.3.") } ||
+                    domains.contains("pesu", ignoreCase = true) ||
+                    ips.any { it.startsWith("10.") || it.startsWith("172.16.") }
+
+            if (isCampusInfrastructure) {
                 lastConfirmedCampusNetwork = net
                 lastConfirmedCampusTime = now
+                AppLogger.d("PortalRepository", "isCampusNetwork: Infrastructure match (GW=$gw, DNS=$dns, Domains=$domains, IPs=$ips). Campus recognized.")
                 return true
             }
         }
 
         return false
+    }
+
+    fun getDefaultGateway(wifiNet: Network? = null): String? {
+        val net = wifiNet ?: getWifiNetwork() ?: return null
+        val lp = connectivityManager?.getLinkProperties(net) ?: return null
+        return lp.routes.firstOrNull { it.isDefaultRoute }?.gateway?.hostAddress
     }
 
     fun clearCampusCache() {
@@ -366,6 +376,18 @@ class PortalRepository(
     }
 
     companion object {
+        val CAMPUS_SSIDS = setOf(
+            "AMAATRA_HOSTEL",
+            "Foodcourt",
+            "PESU-EC-Campus",
+            "PESU-RR-Campus",
+            "PESU-Campus",
+            "PESU-WiFi",
+            "PES_WIFI",
+            "PESU-CIE",
+            "pes south cafe"
+        )
+
         @Volatile
         private var instance: PortalRepository? = null
 

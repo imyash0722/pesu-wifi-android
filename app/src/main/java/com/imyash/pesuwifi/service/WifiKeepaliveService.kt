@@ -38,6 +38,7 @@ import com.imyash.pesuwifi.data.WifiSuggestionManager
 import com.imyash.pesuwifi.BuildConfig
 import com.imyash.pesuwifi.data.BssidDatabase
 import com.imyash.pesuwifi.util.AppLogger
+import com.imyash.pesuwifi.util.RouterPing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -1030,6 +1031,10 @@ class WifiKeepaliveService : Service() {
         reconnectJob?.cancel()
         reconnectJob = serviceScope.launch {
             delay(250L) // Fast 250ms debounce window for physical AP handover
+            if (!lastGateway.isNullOrBlank()) {
+                val pingOk = RouterPing.pingGateway(lastGateway, timeoutMs = 1200, network = network)
+                AppLogger.roam(TAG, "Router gateway ping during roaming ($lastGateway): reachable=$pingOk")
+            }
             performKeepaliveCheck(force = true, isRoamingEvent = true)
             reportConnectivityValidated()
         }

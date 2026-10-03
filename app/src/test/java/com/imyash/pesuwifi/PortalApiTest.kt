@@ -61,4 +61,31 @@ class PortalApiTest {
         assertEquals("LOGIN", parsed["status"])
         assertEquals("Maximum Login Limit Reached", parsed["message"])
     }
+
+    @Test
+    fun testParseXmlLiveRequestResponseAck() {
+        val xml = "<?xml version='1.0' ?><liverequestresponse><ack><![CDATA[ack]]></ack><livemessage><![CDATA[]]></livemessage></liverequestresponse>"
+        val parsed = PortalApi.parseXml(xml)
+        val ack = parsed["ack"]?.trim()?.lowercase() ?: ""
+        assertEquals("ack", ack)
+        assertTrue(ack == "ack")
+    }
+
+    @Test
+    fun testParseXmlLiveRequestResponseLiveOff() {
+        val xml = "<?xml version='1.0' ?><liverequestresponse><ack><![CDATA[live_off]]></ack><livemessage><![CDATA[]]></livemessage></liverequestresponse>"
+        val parsed = PortalApi.parseXml(xml)
+        val ack = parsed["ack"]?.trim()?.lowercase() ?: ""
+        assertEquals("live_off", ack)
+        org.junit.Assert.assertFalse(ack == "ack")
+    }
+
+    @Test
+    fun testParseXmlLiveRequestResponseNack() {
+        val xml = "<?xml version='1.0' ?><liverequestresponse><ack><![CDATA[nack]]></ack><livemessage><![CDATA[User already logged in]]></livemessage></liverequestresponse>"
+        val parsed = PortalApi.parseXml(xml)
+        val ack = parsed["ack"]?.trim()?.lowercase() ?: ""
+        assertEquals("nack", ack)
+        org.junit.Assert.assertFalse(ack == "ack")
+    }
 }

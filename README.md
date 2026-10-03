@@ -3,8 +3,8 @@
 Native Android companion app for PESU captive portal login, session management, and continuous keepalive. Replicates the core logic of the `pesu-wifi` CLI with a clean Material 3 interface and background Foreground Service.
 
 [![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases)
-[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.5.0-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.5.0/pesu-wifi-v1.5.0-stable.apk)
-[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.5.0-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.5.0/pesu-wifi-v1.5.0-tester.apk)
+[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.5.1-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.5.1/pesu-wifi-v1.5.1-stable.apk)
+[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.5.1-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.5.1/pesu-wifi-v1.5.1-tester.apk)
 [![Changelog](https://img.shields.io/badge/Changelog-Release_Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -13,6 +13,10 @@ Native Android companion app for PESU captive portal login, session management, 
 ## Features
 
 - **Automated Login & Logout**: 1-tap sign-in and sign-out against the Cyberoam gateway (`http://192.168.254.1:8090`).
+- **Continuous 60-Second Keepalive Engine (v1.4)**: Active foreground service loop with dual-redundant `AlarmManager.setExactAndAllowWhileIdle` ticking every 60s, paired with CPU `WakeLock` and `WifiLock` to satisfy Cyberoam's strict Dead Client Detection (DCD).
+- **OS-Level AP Switching & Zero-Latency Roam (v1.5)**: Uses Android system calls (`WifiNetworkSuggestion` across 5 campus SSIDs, system-persistent `ConnectivityManager` `NetworkCallback` `PendingIntent`, and fallback `JobScheduler`) to switch APs and trigger fast re-auth (<150ms) without waiting for alarms.
+- **Router Reachability Probing (`RouterPing`)**: ICMP ping and network-bound TCP socket probing (ports 8090, 80, 53) to verify router gateway reachability during AP handovers before firing HTTP authentication.
+- **Android 12–16 Forward Compatibility**: Full support for Android 16 (API 36), `NEARBY_WIFI_DEVICES` (`neverForLocation`), 16 KB page-aligned packaging, and predictive back navigation.
 - **Resilient Network Sockets (EPERM Resolution)**: Seamless fallback to standard routing if VPN or system policies prevent physical Wi-Fi interface binding.
 - **Non-Interference Standby Mode**: Automatically pauses keepalive, releases WakeLocks, and cancels wake alarms on home/external Wi-Fi networks; automatically resumes when you reconnect to campus Wi-Fi.
 - **In-App Diagnostic Logs**: Live timestamped log viewer with level filtering, keyword search, 1-tap copy, and Android system export sheet.

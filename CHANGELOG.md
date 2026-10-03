@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.5.1 — Unified OS-Level AP Switching, 60s Keepalive Engine & Android 16 Support](#v151--unified-os-level-ap-switching-60s-keepalive-engine--android-16-support)
+  - [Overview & Major Highlights](#v151-overview--major-highlights)
 - [v1.5.0 — Campus AP Scale, Account Switching Debounce & Resilient Auto-Reconnect](#v150--campus-ap-scale-account-switching-debounce--resilient-auto-reconnect)
   - [Overview & Major Highlights](#v150-overview--major-highlights)
 - [beta-v1.5.0 — Campus AP Scale & Autonomous BSSID Harvesting](#beta-v150--campus-ap-scale--autonomous-bssid-harvesting)
@@ -31,6 +33,33 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.5.1 — Unified OS-Level AP Switching, 60s Keepalive Engine & Android 16 Support
+
+**Release Date:** October 3, 2026  
+**Git Tag:** [`v1.5.1`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.5.1)  
+**Release Type:** Official Production Release  
+**APK Assets:**  
+- `pesu-wifi-v1.5.1-stable.apk` (Production / Stable track with pre-seeded campus AP catalog)  
+- `pesu-wifi-v1.5.1-tester.apk` (Tester track with full diagnostic logs, telemetry & AP explorer)  
+
+### v1.5.1 Overview & Major Highlights
+
+- **🤝 Unified Architecture (1.5 OS System Calls + 1.4 Continuous 60s Keepalive)**:
+  - Combined OS-level `WifiNetworkSuggestion` (18 suggestion profiles across 9 campus SSIDs), system-persistent `ConnectivityManager.registerNetworkCallback` `PendingIntent`, and `JobScheduler` fallback with the persistent 60-second foreground service keepalive (`WifiKeepaliveService`).
+  - Active 60-second hardware watchdog powered by `AlarmManager.setExactAndAllowWhileIdle` and `KeepaliveAlarmReceiver`, preventing Cyberoam Dead Client Detection (DCD) session termination.
+- **⚡ Physical AP Switching & Router Gateway Probing (`RouterPing`)**:
+  - Implemented `RouterPing` with ICMP ping and network-bound TCP socket fallback (ports 8090, 80, 53) to verify router gateway reachability during AP handovers before firing HTTP authentication.
+  - `WifiKeepaliveService.handleRoamingEvent` triggers zero-latency re-auth (<150ms after DHCP) upon BSSID or gateway change, evicting OkHttp connection pools bound to old access points.
+- **📱 Android 16 (API 36) & Android 12+ Forward Compatibility**:
+  - Added `<uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" />` to resolve SSID and BSSID redaction without requiring background GPS/location prompts.
+  - Configured 16 KB page-aligned ELF packaging (`jniLibs { useLegacyPackaging = false }`) for Android 15 & 16 compatibility.
+  - Enabled system predictive back gesture navigation (`android:enableOnBackInvokedCallback="true"`).
+- **🌐 Broad Infrastructure Recognition**:
+  - Expanded campus recognition in `PortalRepository.isCampusNetwork` to identify `10.*` gateways and IPs, and `192.168.3.*` DNS servers (matching campus DHCP layouts seen on Vivo/Android 16 devices).
+  - Automatically identifies all 5 core campus SSIDs (`PESU-EC-Campus`, `PESU-RR-Campus`, `PESU-Campus`, `PESU-WiFi`, `PES_WIFI`) alongside auxiliary networks (`PESU-CIE`, `AMAATRA_HOSTEL`, `Foodcourt`, `pes south cafe`).
 
 ---
 
