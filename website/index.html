@@ -3,445 +3,57 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="PESU WiFi for Android - Modern, open-source captive portal auto-login and background keepalive client for PES University campus networks.">
+  <meta name="description" content="PESU WiFi - Seamless captive portal auto-login and background keepalive for PES University Wi-Fi.">
   <meta name="theme-color" content="#2563EB">
 
-  <!-- Open Graph / Meta -->
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="PESU WiFi for Android">
-  <meta property="og:description" content="Seamless Campus Wi-Fi. Auto-Login & Continuous 120s Keepalive for PES University.">
-  <meta property="og:image" content="./assets/icon.svg">
+  <title>PESU WiFi for Android</title>
 
-  <title>PESU WiFi for Android | Seamless Campus Connectivity</title>
-
-  <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
-
-  <!-- Stylesheet -->
   <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
 
-  <!-- Navigation Bar -->
-  <header class="navbar">
-    <div class="container nav-container">
-      <a href="#" class="brand" aria-label="PESU WiFi Home">
-        <img src="./assets/icon.svg" alt="PESU WiFi Logo" class="brand-icon" width="38" height="38">
-        <span>PESU WiFi</span>
+  <main class="card">
+    <div class="brand">
+      <img src="./assets/icon.svg" alt="PESU WiFi Logo" class="brand-icon" width="48" height="48">
+      <div>
+        <h1 class="brand-title">PESU WiFi</h1>
+        <span class="badge">v1.2.0 • Android 10+</span>
+      </div>
+    </div>
+
+    <p class="description">
+      Automated captive portal login and background keepalive for PES University campus networks. Connects to the strongest access point, authenticates your account, and prevents session dropouts.
+    </p>
+
+    <div class="actions">
+      <a href="https://github.com/imyash0722/pesu-wifi-android/releases/latest" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Download APK</span>
       </a>
 
-      <ul class="nav-links">
-        <li><a href="#features" class="nav-link">Features</a></li>
-        <li><a href="#showcase" class="nav-link">Showcase</a></li>
-        <li><a href="#setup" class="nav-link">Setup Guide</a></li>
-        <li><a href="#download" class="nav-link">Download</a></li>
-        <li><a href="#specs" class="nav-link">Specs</a></li>
-      </ul>
-
-      <div class="nav-actions">
-        <a href="https://github.com/imyash0722/pesu-wifi-android" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-          </svg>
-          <span>GitHub</span>
-        </a>
-      </div>
+      <a href="https://github.com/imyash0722/pesu-wifi-android" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+        <span>GitHub</span>
+      </a>
     </div>
-  </header>
 
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="container hero-grid">
-      <div class="hero-content">
-        <div class="hero-tag">
-          <span>●</span>
-          <span>v1.2.0 • Android 10+ (API 29–35)</span>
-        </div>
-        <h1 class="hero-title">
-          Seamless Campus Wi-Fi.<br>
-          <span class="hero-highlight">Auto-Login & Keepalive.</span>
-        </h1>
-        <p class="hero-lead">
-          A high-performance, modern Android client designed for PES University's captive portals.
-          Automatically detects campus networks, authenticates instantly, switches accounts, prioritizes the strongest access point, and keeps your session alive with zero interruptions.
-        </p>
-        <div class="hero-buttons">
-          <a href="#download" class="btn btn-primary btn-lg">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Download APK</span>
-          </a>
-          <a href="https://github.com/imyash0722/pesu-wifi-android" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg">
-            <span>View Source Code</span>
-          </a>
-        </div>
-        <div class="hero-badges">
-          <span class="badge">🎨 Material 3 & Compose</span>
-          <span class="badge">🔒 AES-256 Encrypted</span>
-          <span class="badge">⚡ 120s Jittered Keepalive</span>
-          <span class="badge">🛡️ Zero Trackers</span>
-          <span class="badge">📜 GPL-3.0 Open Source</span>
-        </div>
-      </div>
-      <div class="hero-preview">
-        <img src="./assets/mockups/home-screen.svg" alt="PESU WiFi Home Screen Interface" class="mockup-frame" width="320" height="660">
-      </div>
+    <div class="mockup-container">
+      <img src="./assets/mockups/home-screen.svg" alt="PESU WiFi App Interface" class="mockup" width="300" height="620">
     </div>
-  </section>
 
-  <!-- Features Section -->
-  <section class="section section-alt" id="features">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-tag">Powerful Capabilities</div>
-        <h2 class="section-title">Engineered for Flawless Campus Connectivity</h2>
-        <p class="section-desc">Say goodbye to broken captive portal tabs, random session timeouts, and manual logins across classes and hostels.</p>
-      </div>
+    <footer class="footer">
+      <span>Open Source under GNU GPL-3.0</span>
+      <span>•</span>
+      <a href="https://github.com/imyash0722/pesu-wifi-android/releases" target="_blank" rel="noopener noreferrer">All Releases</a>
+    </footer>
+  </main>
 
-      <div class="features-grid">
-        <!-- Feature 1 -->
-        <article class="feature-card">
-          <div class="feature-icon">🚀</div>
-          <h3 class="feature-title">Zero-Touch Auto-Connect</h3>
-          <p class="feature-text">Automatically identifies PES campus Wi-Fi networks (EC Campus, RR Campus, Amaatra Hostel, and CIE) and authenticates your account in milliseconds.</p>
-        </article>
-
-        <!-- Feature 2 -->
-        <article class="feature-card">
-          <div class="feature-icon">🔄</div>
-          <h3 class="feature-title">Continuous 120s Keepalive</h3>
-          <p class="feature-text">Maintains an active background keepalive daemon every 120 seconds with &plusmn;30s jitter. Keeps your captive session alive indefinitely without battery drain.</p>
-        </article>
-
-        <!-- Feature 3 -->
-        <article class="feature-card">
-          <div class="feature-icon">📶</div>
-          <h3 class="feature-title">Smart Strongest AP Roaming</h3>
-          <p class="feature-text">Scans campus BSSIDs and prioritizes the access point with the highest signal strength (RSSI) so you always stay connected to the fastest nearby node.</p>
-        </article>
-
-        <!-- Feature 4 -->
-        <article class="feature-card">
-          <div class="feature-icon">🌐</div>
-          <h3 class="feature-title">Dynamic Gateway Discovery</h3>
-          <p class="feature-text">Autodetects whether you are on the standard campus gateway (192.168.254.1) or the Amaatra hostel portal (192.168.1.1) with seamless fallback.</p>
-        </article>
-
-        <!-- Feature 5 -->
-        <article class="feature-card">
-          <div class="feature-icon">🔐</div>
-          <h3 class="feature-title">AES-256 Vault</h3>
-          <p class="feature-text">Multiple student accounts encrypted using Android Jetpack Security with hardware-backed MasterKey keys in the Android Keystore.</p>
-        </article>
-
-        <!-- Feature 6 -->
-        <article class="feature-card">
-          <div class="feature-icon">📊</div>
-          <h3 class="feature-title">Live Telemetry & Diagnostics</h3>
-          <p class="feature-text">Monitor session uptime, latency ping times, keepalive status, and live logcat directly within the app for transparent network troubleshooting.</p>
-        </article>
-
-        <!-- Feature 7 -->
-        <article class="feature-card">
-          <div class="feature-icon">📱</div>
-          <h3 class="feature-title">Quick Settings Tile</h3>
-          <p class="feature-text">Add the PESU WiFi tile directly to your Android notification shade for instant one-tap login and logout without opening the app.</p>
-        </article>
-
-        <!-- Feature 8 -->
-        <article class="feature-card">
-          <div class="feature-icon">📳</div>
-          <h3 class="feature-title">Haptic & Material 3 UI</h3>
-          <p class="feature-text">Clean, native Jetpack Compose interface with dynamic Material You color matching and crisp tactile feedback on every action.</p>
-        </article>
-
-        <!-- Feature 9 -->
-        <article class="feature-card">
-          <div class="feature-icon">🛡️</div>
-          <h3 class="feature-title">Privacy First, Open Source</h3>
-          <p class="feature-text">No third-party analytics, no tracking, and no external telemetry. All requests communicate strictly with internal campus gateways.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- App Showcase Section -->
-  <section class="section" id="showcase">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-tag">Interactive Interface</div>
-        <h2 class="section-title">Designed for Simplicity and Control</h2>
-        <p class="section-desc">Explore the screens designed to give you effortless control over your campus authentication.</p>
-      </div>
-
-      <div class="showcase-grid">
-        <div class="showcase-controls">
-          <!-- Tab 1 -->
-          <div class="showcase-tab active" data-target="home" role="button" tabindex="0" aria-label="View Home Screen Mockup">
-            <h3 class="showcase-tab-title">1. Dashboard & Quick Actions</h3>
-            <p class="showcase-tab-desc">Monitor connection status, network IP, gateway latency, and trigger instant connect with continuous 120s keepalive.</p>
-          </div>
-
-          <!-- Tab 2 -->
-          <div class="showcase-tab" data-target="accounts" role="button" tabindex="0" aria-label="View Accounts Screen Mockup">
-            <h3 class="showcase-tab-title">2. Encrypted Account Vault</h3>
-            <p class="showcase-tab-desc">Store multiple PESU credentials securely with AES-256 encryption. Switch between accounts with a single tap when limits are hit.</p>
-          </div>
-
-          <!-- Tab 3 -->
-          <div class="showcase-tab" data-target="logs" role="button" tabindex="0" aria-label="View Logs Screen Mockup">
-            <h3 class="showcase-tab-title">3. Real-Time Telemetry & Logcat</h3>
-            <p class="showcase-tab-desc">Inspect exact HTTP portal responses, keepalive ping results, roaming handovers, and copy logs for debugging.</p>
-          </div>
-        </div>
-
-        <div class="showcase-viewer">
-          <img id="showcase-mockup-img" src="./assets/mockups/home-screen.svg" alt="PESU WiFi Home Screen mockup showing connected status and keepalive active" class="showcase-img" width="290" height="600">
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Student Setup Guide Section -->
-  <section class="section section-alt" id="setup">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-tag">Quick Start</div>
-        <h2 class="section-title">Setup in Less Than 60 Seconds</h2>
-        <p class="section-desc">Follow these quick steps to get connected and configure background keepalive on your device.</p>
-      </div>
-
-      <div class="steps-grid">
-        <div class="step-card">
-          <div class="step-number">1</div>
-          <h3 class="step-title">Download & Install</h3>
-          <p class="step-desc">Grab the latest APK release from GitHub. Enable "Install Unknown Apps" for your browser when prompted.</p>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">2</div>
-          <h3 class="step-title">Grant Permissions</h3>
-          <p class="step-desc">Allow Notifications (for the foreground keepalive service) and Location/Nearby Wi-Fi devices (for campus AP scanning).</p>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">3</div>
-          <h3 class="step-title">Add Account</h3>
-          <p class="step-desc">Enter your PES University PRN (e.g. <code>PES1UG...</code>) and captive portal password. Credentials are encrypted on-device.</p>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">4</div>
-          <h3 class="step-title">Tap Connect</h3>
-          <p class="step-desc">Tap Connect & Login. The app turns on Wi-Fi, locks onto the strongest campus AP, logs in, and engages keepalive automatically.</p>
-        </div>
-      </div>
-
-      <!-- OEM Battery Guidance -->
-      <div class="oem-box">
-        <h3 class="oem-header">⚡ OEM Battery Optimization Tips</h3>
-        <p class="oem-sub">Aggressive battery managers can kill background services. To ensure 120s keepalive stays active across campus walks, exclude PESU WiFi from battery restrictions:</p>
-
-        <div class="oem-grid">
-          <div class="oem-card">
-            <h4 class="oem-name">Xiaomi / MIUI / HyperOS</h4>
-            <p class="oem-path">Settings &rarr; Apps &rarr; Manage Apps &rarr; PESU WiFi &rarr; Battery Saver &rarr; <strong>No Restrictions</strong>. Also enable <strong>Autostart</strong>.</p>
-          </div>
-
-          <div class="oem-card">
-            <h4 class="oem-name">OnePlus / OxygenOS</h4>
-            <p class="oem-path">Settings &rarr; Battery &rarr; Battery Optimization &rarr; PESU WiFi &rarr; Select <strong>Don't Optimize</strong>.</p>
-          </div>
-
-          <div class="oem-card">
-            <h4 class="oem-name">Samsung / One UI</h4>
-            <p class="oem-path">Settings &rarr; Battery &amp; device care &rarr; Battery &rarr; Background usage limits &rarr; Add to <strong>Never sleeping apps</strong>.</p>
-          </div>
-
-          <div class="oem-card">
-            <h4 class="oem-name">RealMe / OPPO (ColorOS)</h4>
-            <p class="oem-path">Settings &rarr; App Management &rarr; PESU WiFi &rarr; Battery Usage &rarr; Allow <strong>Background Activity</strong> &amp; <strong>Auto-launch</strong>.</p>
-          </div>
-
-          <div class="oem-card">
-            <h4 class="oem-name">Google Pixel / Stock AOSP</h4>
-            <p class="oem-path">Settings &rarr; Apps &rarr; PESU WiFi &rarr; App battery usage &rarr; Select <strong>Unrestricted</strong>.</p>
-          </div>
-        </div>
-
-        <div class="alert-box">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-          <div>
-            <strong>Campus Notice:</strong> Keepalive runs every 120 seconds with random ±30s jitter to mirror natural activity and avoid synchronised gateway packet surges. It operates as an ongoing foreground service with an active status icon in your status bar.
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Downloads Section -->
-  <section class="section" id="download">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-tag">Installers & Packages</div>
-        <h2 class="section-title">Download PESU WiFi</h2>
-        <p class="section-desc">Choose your preferred release channel. Built with GitHub Actions CI/CD with SHA-256 verification.</p>
-      </div>
-
-      <div class="download-grid">
-        <!-- Stable Channel -->
-        <div class="download-card featured">
-          <div class="featured-badge">Recommended</div>
-          <div>
-            <h3 class="download-track">Stable Release</h3>
-            <div class="download-version">Version 1.2.0 • Android 10+</div>
-            <ul class="download-features">
-              <li>120s Keepalive Daemon with ±30s Jitter</li>
-              <li>Strongest Campus AP Roaming & Scan</li>
-              <li>Dual Gateway Probing (EC Campus & Amaatra)</li>
-              <li>AES-256 Vault for Multiple Accounts</li>
-              <li>Quick Settings Notification Tile</li>
-            </ul>
-          </div>
-          <a href="https://github.com/imyash0722/pesu-wifi-android/releases/latest" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg" style="width: 100%;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Download Stable APK</span>
-          </a>
-        </div>
-
-        <!-- Beta Channel -->
-        <div class="download-card">
-          <div>
-            <h3 class="download-track">Beta / Nightly</h3>
-            <div class="download-version">Preview Channel • Early Access</div>
-            <ul class="download-features">
-              <li>Preview upcoming UI enhancements</li>
-              <li>Experimental captive portal optimizations</li>
-              <li>Test new campus network gateways</li>
-              <li>Installed side-by-side with distinct app ID</li>
-              <li>Direct feedback loop via GitHub Issues</li>
-            </ul>
-          </div>
-          <a href="https://github.com/imyash0722/pesu-wifi-android/releases" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-lg" style="width: 100%;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-            </svg>
-            <span>Explore All Releases</span>
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Technical Specs Section -->
-  <section class="section section-alt" id="specs">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-tag">Specifications</div>
-        <h2 class="section-title">Technical Architecture</h2>
-        <p class="section-desc">Designed following modern Android best practices, Clean Architecture, and strict security standards.</p>
-      </div>
-
-      <div class="specs-table-wrapper">
-        <table class="specs-table">
-          <tbody>
-            <tr>
-              <td>Minimum OS</td>
-              <td>Android 10.0 (API Level 29)</td>
-            </tr>
-            <tr>
-              <td>Target SDK</td>
-              <td>Android 15.0 (API Level 35)</td>
-            </tr>
-            <tr>
-              <td>Architecture</td>
-              <td>MVVM + Repository Pattern + Kotlin Coroutines &amp; Flow</td>
-            </tr>
-            <tr>
-              <td>UI Toolkit</td>
-              <td>100% Jetpack Compose with Material Design 3</td>
-            </tr>
-            <tr>
-              <td>Encryption</td>
-              <td>Jetpack Security EncryptedSharedPreferences (AES-256 GCM) backed by Android Keystore</td>
-            </tr>
-            <tr>
-              <td>Networking</td>
-              <td>OkHttp 4.12 with dynamic gateway probing &amp; captive portal redirect resolution</td>
-            </tr>
-            <tr>
-              <td>Background Execution</td>
-              <td>Foreground Service (<code>START_STICKY</code>) + AlarmManager for 120s &plusmn;30s jittered keepalive</td>
-            </tr>
-            <tr>
-              <td>Supported Networks</td>
-              <td>PESU-EC-Campus, PESU-RR-Campus, AMAATRA-HOSTEL, PESU-CIE, and campus affiliate APs</td>
-            </tr>
-            <tr>
-              <td>License</td>
-              <td>GNU General Public License v3.0 (GPL-3.0)</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-grid">
-        <div>
-          <div class="brand">
-            <img src="./assets/icon.svg" alt="PESU WiFi Logo" class="brand-icon" width="32" height="32">
-            <span>PESU WiFi</span>
-          </div>
-          <p class="footer-brand-desc">
-            An open-source, student-led Android application making campus connectivity seamless and reliable across PES University.
-          </p>
-        </div>
-
-        <div>
-          <h4 class="footer-heading">Navigation</h4>
-          <ul class="footer-links">
-            <li><a href="#features">Features</a></li>
-            <li><a href="#showcase">Preview</a></li>
-            <li><a href="#setup">Setup Guide</a></li>
-            <li><a href="#download">Download APK</a></li>
-            <li><a href="#specs">Specifications</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 class="footer-heading">Project & Community</h4>
-          <ul class="footer-links">
-            <li><a href="https://github.com/imyash0722/pesu-wifi-android" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
-            <li><a href="https://github.com/imyash0722/pesu-wifi-android/releases" target="_blank" rel="noopener noreferrer">Releases &amp; Changelogs</a></li>
-            <li><a href="https://github.com/imyash0722/pesu-wifi-android/issues" target="_blank" rel="noopener noreferrer">Report an Issue</a></li>
-            <li><a href="https://github.com/imyash0722/pesu-wifi-android/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">GNU GPL-3.0 License</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="footer-bottom">
-        <div>&copy; 2026 PESU WiFi Contributors. Open source under GNU GPL-3.0.</div>
-        <div>Not officially affiliated with PES University. Created by students for students.</div>
-      </div>
-    </div>
-  </footer>
-
-  <!-- Scripts -->
-  <script src="./js/main.js"></script>
 </body>
 </html>
