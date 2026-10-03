@@ -188,6 +188,26 @@ body {
   transform: translateY(-4px) scale(1.01);
 }
 
+.star-note {
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+}
+
+.star-note a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.18s ease;
+}
+
+.star-note a:hover {
+  color: var(--btn-primary-bg);
+  text-decoration: underline;
+}
+
 .footer {
   display: flex;
   align-items: center;
@@ -231,6 +251,10 @@ body {
 
   .actions {
     justify-content: center;
+  }
+
+  .star-note {
+    text-align: center;
   }
 
   .footer {
