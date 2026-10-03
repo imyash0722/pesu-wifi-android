@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📱 Step-by-Step Setup Guide
+    url: https://imyash0722.github.io/pesu-wifi-android/instructions.html
+    about: Common questions about permissions, battery whitelist, and Wi-Fi notification setup.
+  - name: 🌐 PESU WiFi Official Website
+    url: https://imyash0722.github.io/pesu-wifi-android/
+    about: Download APKs, view mockups, and read documentation.

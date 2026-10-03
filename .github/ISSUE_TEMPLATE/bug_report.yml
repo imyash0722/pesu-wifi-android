@@ -1,0 +1,75 @@
+name: 🐛 Bug / Connection Issue Report
+description: Report a captive portal login failure, Wi-Fi keepalive dropout, or app bug.
+title: "[Bug]: "
+labels: ["bug", "community-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve PESU WiFi! Please provide details about your device and where on campus you experienced this issue.
+  - type: input
+    id: device_model
+    attributes:
+      label: Phone Brand & Model
+      description: What phone model are you using?
+      placeholder: "e.g., Google Pixel 9a, Samsung Galaxy S23, Vivo V27, OnePlus 11"
+    validations:
+      required: true
+  - type: dropdown
+    id: android_version
+    attributes:
+      label: Android Version
+      description: Select your Android OS version.
+      options:
+        - "Android 16 / 17 (Preview / Canary)"
+        - "Android 15"
+        - "Android 14"
+        - "Android 13"
+        - "Android 12 / 12L"
+        - "Android 11"
+        - "Android 10"
+        - "Older (Android 9 or below)"
+    validations:
+      required: true
+  - type: dropdown
+    id: campus_location
+    attributes:
+      label: Campus / Hostel Location
+      description: Where did this issue occur?
+      options:
+        - "EC Campus — GJBC (Classrooms / Seminar Halls)"
+        - "EC Campus — CIE Labs / South Cafe"
+        - "EC Campus — Library / Auditorium"
+        - "RR Campus — Engineering Blocks"
+        - "Amaatra Hostel (AMAATRA-HOSTEL)"
+        - "Food Court"
+        - "Other / Off-Campus"
+    validations:
+      required: true
+  - type: dropdown
+    id: issue_category
+    attributes:
+      label: Issue Category
+      options:
+        - "Captive Portal Login Failure / Invalid Password Loop"
+        - "Wi-Fi Disconnecting When Screen Locks (Keepalive Drop)"
+        - "Classroom / AP Roaming Handover Failure"
+        - "Wrong Gateway IP / Portal Unreachable"
+        - "App Crash or UI Freeze"
+        - "Other"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe what you were doing, what the app displayed, and what went wrong.
+      placeholder: "e.g., When moving from GJBC 3rd floor to 4th floor, the app got stuck on 'Connecting...' and did not auto-authenticate."
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Diagnostic Logs (Optional)
+      description: If you are using the Tester track APK, tap the Logs icon in the top right, tap Copy, and paste relevant lines here.
+      render: text

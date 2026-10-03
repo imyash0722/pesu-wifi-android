@@ -1,0 +1,25 @@
+name: 💡 Feature Request / Suggestion
+description: Suggest an idea or enhancement for PESU WiFi.
+title: "[Feature]: "
+labels: ["enhancement", "community-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea to make PESU WiFi even better? Let us know!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Pain Point
+      description: Is your feature request related to a specific problem?
+      placeholder: "e.g., It's tedious to..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution / Feature
+      description: What would you like the app to do?
+      placeholder: "e.g., Add a widget to toggle keepalive..."
+    validations:
+      required: true

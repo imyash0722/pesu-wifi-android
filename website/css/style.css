@@ -51,6 +51,10 @@
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -265,3 +269,154 @@ body {
     max-width: 250px;
   }
 }
+
+/* Report & Feedback Section */
+.report-section {
+  margin-top: 3.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--surface-border);
+  scroll-margin-top: 2rem;
+}
+
+.report-card {
+  background-color: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 18px;
+  padding: 2.25rem 2rem;
+  box-shadow: 0 10px 25px rgba(103, 86, 71, 0.08);
+}
+
+.report-header {
+  margin-bottom: 1.75rem;
+}
+
+.report-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--badge-text);
+  background-color: var(--badge-bg);
+  border: 1px solid var(--badge-border);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.report-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--brand-title);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
+}
+
+.report-subtitle {
+  font-size: 0.96rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.form-group label .req {
+  color: #B91C1C;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem 0.95rem;
+  border-radius: 10px;
+  border: 1px solid var(--surface-border);
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--btn-primary-bg);
+  box-shadow: 0 0 0 3px rgba(108, 110, 54, 0.2);
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.form-actions button.btn {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+}
+
+.form-actions button.btn-secondary {
+  border: 1px solid var(--surface-border);
+}
+
+.form-status {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.form-status.success {
+  background-color: rgba(108, 110, 54, 0.15);
+  border: 1px solid var(--btn-primary-bg);
+  color: var(--text);
+}
+
+.form-status.error {
+  background-color: rgba(185, 28, 28, 0.1);
+  border: 1px solid #B91C1C;
+  color: #B91C1C;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  .report-card {
+    padding: 1.5rem 1.25rem;
+  }
+  .form-actions {
+    flex-direction: column;
+  }
+  .form-actions .btn {
+    width: 100%;
+  }
+}
+
