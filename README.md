@@ -4,8 +4,8 @@ Native Android companion app for PESU captive portal login, session management, 
 
 [![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)
 [![Website](https://img.shields.io/badge/Website-GitHub_Pages-6C6E36.svg)](https://imyash0722.github.io/pesu-wifi-android/)
-[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.7.0-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.0/pesu-wifi-v1.7.0-stable.apk)
-[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.7.0-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.0/pesu-wifi-v1.7.0-tester.apk)
+[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.7.1-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.1/pesu-wifi-v1.7.1-stable.apk)
+[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.7.1-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.1/pesu-wifi-v1.7.1-tester.apk)
 [![Changelog](https://img.shields.io/badge/Changelog-Release_Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -16,13 +16,13 @@ Native Android companion app for PESU captive portal login, session management, 
 - **Automated Login & Logout**: 1-tap sign-in and sign-out against campus Cyberroam gateways.
 - **Continuous 120-Second Jittered Keepalive Engine (v1.7)**: Foreground service keepalive running every 120s with &plusmn;30s randomized jitter (90s–150s range, clamped at 60s minimum) to prevent synchronized server floods while satisfying Cyberroam's strict Dead Client Detection (DCD).
 - **Smart Strongest AP Roaming & Auto-Connect (v1.7)**: Actively scans campus BSSIDs by RSSI signal strength (`WifiSuggestionManager.findStrongestCampusAp`), prioritizes the strongest access point across campus (`priority=1000`), and automatically prompts to power on the Wi-Fi radio on Connect button tap.
-- **Dynamic Dual-Gateway Probing (v1.7)**: Dynamically detects and probes candidate portal gateways between standard campus networks (`http://192.168.254.1:8090`) and the Amaatra Hostel portal (`http://192.168.1.1:8090/httpclient.html`), parsing captive redirect headers with seamless fallback.
+- **Dynamic Multi-Gateway Probing & Amaatra Hostel Support (v1.7.1)**: Dynamically detects and probes candidate portal gateways between standard campus networks (`http://192.168.254.1:8090`) and the Amaatra Hostel portal (`http://172.16.1.1:8090` / `http://192.168.1.1:8090`), with automated captive HTTP 302/307 redirect discovery.
 - **Earthy "STUDY HARD" Design Aesthetic (v1.7)**: Modernized launcher icon and landing page palette (`#675647` mocha, `#E3BD90` caramel tan, `#DFD3B5` cream, `#6C6E36` olive green).
 - **Minimalist Web Landing Page (v1.7)**: Zero-dependency, responsive landing page served directly via GitHub Actions at [https://imyash0722.github.io/pesu-wifi-android/](https://imyash0722.github.io/pesu-wifi-android/).
 - **OS-Level AP Switching & Zero-Latency Roam (v1.5/v1.6)**: Android system calls (`WifiNetworkSuggestion` across campus SSIDs, system-persistent `ConnectivityManager` `NetworkCallback` `PendingIntent`, and fallback `JobScheduler`) to trigger fast re-auth (<150ms) upon roaming.
 - **Router Reachability Probing (`RouterPing`)**: ICMP ping and network-bound TCP socket probing (ports 8090, 80, 53) to verify router gateway reachability during AP handovers before firing HTTP authentication.
 - **OEM Battery Optimization Override**: 1-tap manual whitelist confirmation resolving persistent detection hurdles on custom Android skins (Vivo FuntouchOS, Xiaomi MIUI/HyperOS, Samsung OneUI).
-- **Android 12–16 Forward Compatibility**: Full support for Android 16 (API 36), `NEARBY_WIFI_DEVICES` (`neverForLocation`), 16 KB page-aligned packaging, and predictive back navigation.
+- **Android 12–16 Forward Compatibility**: Full support for Android 16 (API 36), runtime location & Wi-Fi device permissions without SSID redaction, 16 KB page-aligned packaging, and predictive back navigation.
 - **Resilient Network Sockets (EPERM Resolution)**: Seamless fallback to standard routing if VPN or system policies prevent physical Wi-Fi interface binding.
 - **Non-Interference Standby Mode**: Automatically pauses keepalive, releases WakeLocks, and cancels wake alarms on home/external Wi-Fi networks; automatically resumes when you reconnect to campus Wi-Fi.
 - **In-App Diagnostic Logs**: Live timestamped log viewer with level filtering, keyword search, 1-tap copy, and Android system export sheet.

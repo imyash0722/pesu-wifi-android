@@ -119,7 +119,20 @@ class PortalApiTest {
     }
 
     @Test
+    fun testPortalConstants() {
+        assertEquals("http://192.168.254.1:8090", PortalApi.DEFAULT_PORTAL_BASE)
+        assertEquals("http://172.16.1.1:8090", PortalApi.AMAATRA_PORTAL_BASE)
+        assertEquals("http://192.168.1.1:8090", PortalApi.AMAATRA_LEGACY_BASE)
+    }
+
+    @Test
     fun testPortalBaseUrlDerivation() {
+        PortalApi.portalBaseUrl = PortalApi.AMAATRA_PORTAL_BASE
+        assertEquals("http://172.16.1.1:8090/login.xml", PortalApi.loginUrl)
+        assertEquals("http://172.16.1.1:8090/logout.xml", PortalApi.logoutUrl)
+        assertEquals("http://172.16.1.1:8090/live", PortalApi.liveUrl)
+        assertEquals("http://172.16.1.1:8090/httpclient.html", PortalApi.probeUrl)
+
         PortalApi.portalBaseUrl = "http://192.168.1.1:8090"
         assertEquals("http://192.168.1.1:8090/login.xml", PortalApi.loginUrl)
         assertEquals("http://192.168.1.1:8090/logout.xml", PortalApi.logoutUrl)

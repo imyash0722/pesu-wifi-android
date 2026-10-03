@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.7.1 — Amaatra Hostel 172.16.1.1 Gateway Resolution & Modern Android SSID Unmasking](#v171--amaatra-hostel-1721611-gateway-resolution--modern-android-ssid-unmasking)
+  - [Overview & Major Highlights](#v171-overview--major-highlights)
 - [v1.7.0 — Smart Strongest AP Roaming, Dynamic Gateway Probing & 120s Jittered Keepalive](#v170--smart-strongest-ap-roaming-dynamic-gateway-probing--120s-jittered-keepalive)
   - [Overview & Major Highlights](#v170-overview--major-highlights)
 - [v1.6.1 — OEM Battery Whitelist Manual Override, First-Launch Prompt Fix & Security Hardening](#v161--oem-battery-whitelist-manual-override-first-launch-prompt-fix--security-hardening)
@@ -37,6 +39,32 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.7.1 — Amaatra Hostel 172.16.1.1 Gateway Resolution & Modern Android SSID Unmasking
+
+**Release Date:** October 3, 2026  
+**Git Tag:** [`v1.7.1`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.1)  
+**Release Type:** Critical Bugfix & Gateway Expansion  
+**APK Assets:**  
+- `pesu-wifi-v1.7.1-stable.apk` (Production / Stable track)  
+- `pesu-wifi-v1.7.1-tester.apk` (Tester track with universal diagnostic logs & telemetry)  
+
+### v1.7.1 Overview & Major Highlights
+
+- **🏨 Amaatra Hostel Gateway (`172.16.1.1`) Resolution**:
+  - Solved portal unreachable errors in Amaatra Hostel (`AMAATRA-HOSTEL`), where the default gateway is `172.16.1.1` on the `172.16.0.0/16` subnet rather than `192.168.1.1`.
+  - Updated `PortalApi.AMAATRA_PORTAL_BASE` to `http://172.16.1.1:8090` (preserving `http://192.168.1.1:8090` as `AMAATRA_LEGACY_BASE`).
+  - `PortalRepository.resolvePortalBase()` now dynamically inspects the router default gateway `gw` and resolves directly to `http://$gw:8090` whenever connected to `172.16.*` or `10.*` subnets.
+- **🔍 Multi-Candidate Dynamic Gateway Probing & Captive HTTP Redirect Autodiscovery**:
+  - `PortalApi.isPortalOnline()` now dynamically probes a candidate list including the active gateway router base, Amaatra Hostel (`172.16.1.1:8090`), EC/RR Campus (`192.168.254.1:8090`), and legacy Amaatra (`192.168.1.1:8090`).
+  - Added captive portal HTTP redirect detection on `http://connectivitycheck.gstatic.com/generate_204`: if Cyberoam intercepts outbound traffic, the app parses the HTTP 302/307 `Location` header to dynamically discover and bind to new campus portal gateways without hardcoding.
+- **🛡️ Android 16 (API 36) SSID & BSSID Redaction Resolution**:
+  - Removed `android:usesPermissionFlags="neverForLocation"` from `NEARBY_WIFI_DEVICES` in `AndroidManifest.xml` which previously forced the Android OS to suppress the SSID to `<unknown ssid>` and BSSID to `02:00:00:00:00:00`.
+  - Updated `MainActivity.promptRuntimePermissions()` to request `ACCESS_FINE_LOCATION` across all modern Android versions (13+ / 14 / 15 / 16), allowing `NetworkCapabilities` and `WifiInfo` to report the real SSID (`AMAATRA-HOSTEL`) and physical BSSID.
+- **🏫 Campus Infrastructure Heuristics Hardening**:
+  - Included `172.16.*` default gateways in `PortalRepository.isCampusInfrastructure` so the app instantly classifies the connection as PESU campus even before DHCP IP binding or if SSID is masked.
 
 ---
 

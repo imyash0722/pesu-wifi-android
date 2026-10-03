@@ -173,7 +173,7 @@ class PortalRepository(
             val domains = lp.domains ?: ""
             val ips = lp.linkAddresses.mapNotNull { it.address?.hostAddress }
 
-            val isCampusInfrastructure = (gw != null && (gw.startsWith("192.168.254.") || gw.startsWith("10."))) ||
+            val isCampusInfrastructure = (gw != null && (gw.startsWith("192.168.254.") || gw.startsWith("10.") || gw.startsWith("172.16."))) ||
                     dns.any { it.startsWith("192.168.3.") } ||
                     domains.contains("pesu", ignoreCase = true) ||
                     ips.any { it.startsWith("10.") || it.startsWith("172.16.") }
@@ -196,25 +196,46 @@ class PortalRepository(
     }
 
     fun resolvePortalBase(wifiNet: Network? = null): String {
-        // 1. If dynamically detected via redirect or active candidate probe, use it
-        PortalApi.detectedPortalBase?.let { return it }
-
-        // 2. Dynamically check router default gateway
         val gw = getDefaultGateway(wifiNet)
-        if (gw == "192.168.1.1") {
-            return PortalApi.AMAATRA_PORTAL_BASE
-        }
-        if (gw != null && gw.startsWith("192.168.254.")) {
-            return PortalApi.DEFAULT_PORTAL_BASE
+
+        // 1. If dynamically detected via redirect or active candidate probe:
+        // Use it only if we don't have a contradicting known gateway
+        PortalApi.detectedPortalBase?.let { detected ->
+            if (gw == null || detected.contains(gw)) {
+                return detected
+            }
+            // Subnet changed, invalidate stale detection
+            PortalApi.detectedPortalBase = null
         }
 
-        // 3. Fallback: check SSID match
+        // 2. Gateway-specific matching
+        if (gw != null) {
+            if (gw == "172.16.1.1" || gw.startsWith("172.16.")) {
+                return "http://$gw:8090"
+            }
+            if (gw.startsWith("192.168.254.")) {
+                return PortalApi.DEFAULT_PORTAL_BASE
+            }
+            if (gw == "192.168.1.1") {
+                return PortalApi.AMAATRA_LEGACY_BASE
+            }
+            if (gw.startsWith("10.")) {
+                return "http://$gw:8090"
+            }
+        }
+
+        // 3. Fallback: check SSID match if SSID is known
         val ssid = getCurrentWifiSsid(wifiNet)
         if (ssid != null && ssid.equals("AMAATRA-HOSTEL", ignoreCase = true)) {
-            return PortalApi.AMAATRA_PORTAL_BASE
+            return if (gw != null) "http://$gw:8090" else PortalApi.AMAATRA_PORTAL_BASE
         }
 
-        // 4. Default fallback
+        // 4. If gateway exists and is private RFC-1918, default to http://$gw:8090
+        if (gw != null && (gw.startsWith("192.168.") || gw.startsWith("172.") || gw.startsWith("10."))) {
+            return "http://$gw:8090"
+        }
+
+        // 5. Default fallback
         return PortalApi.DEFAULT_PORTAL_BASE
     }
 
@@ -228,6 +249,7 @@ class PortalRepository(
     suspend fun refreshStatus(): PortalStatus = withContext(Dispatchers.IO) {
         val wifiNet = getWifiNetwork()
         val localIp = getWifiLocalAddress(wifiNet)
+        val gw = getDefaultGateway(wifiNet)
         api.portalBaseUrl = resolvePortalBase(wifiNet)
         api.setWifiSocketFactory(wifiNet?.socketFactory, localIp)
 
@@ -252,8 +274,9 @@ class PortalRepository(
         val currentSsid = getCurrentWifiSsid(wifiNet)
         val isCampus = isCampusNetwork(wifiNet)
 
+        val candidateGateways = listOfNotNull(gw?.let { "http://$it:8090" })
         val start = System.currentTimeMillis()
-        val portalUp = api.isPortalOnline()
+        val portalUp = api.isPortalOnline(candidateGateways)
         val latency = System.currentTimeMillis() - start
 
         if (portalUp) {

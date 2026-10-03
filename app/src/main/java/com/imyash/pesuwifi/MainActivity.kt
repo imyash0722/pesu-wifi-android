@@ -134,14 +134,13 @@ class MainActivity : ComponentActivity() {
             ) {
                 permissions.add(Manifest.permission.NEARBY_WIFI_DEVICES)
             }
-        } else {
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
+        }
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         }
         if (permissions.isNotEmpty()) {
             requestPermissionsLauncher.launch(permissions.toTypedArray())
