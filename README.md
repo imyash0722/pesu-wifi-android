@@ -35,6 +35,32 @@ Native Android companion app for PESU captive portal login, session management, 
 
 ---
 
+## Network Architecture & Permissions
+
+### Multi-Subnet & Dual-Gateway Support
+* **PESU Campus (EC & RR Campus)**:
+  * Client subnets: `10.x.x.x` (or `192.168.254.x`)
+  * Local VLAN router gateways: `10.14.x.1`
+  * Centralized Cyberoam portal: `http://192.168.254.1:8090`
+* **Amaatra Hostel**:
+  * Client subnet: `172.16.x.x`
+  * Local default gateway: `172.16.1.1`
+  * Cyberoam portal: `http://172.16.1.1:8090`
+* **Automatic Dynamic Discovery**:
+  * Probes candidate gateways in order of priority (`192.168.254.1:8090`, `172.16.1.1:8090`, active gateway).
+  * Automatically detects new portals via HTTP 302/307 redirects on `connectivitycheck.gstatic.com/generate_204`.
+
+### Permissions Explained
+* **Location Permission (`ACCESS_FINE_LOCATION`)**:
+  * Required by the Android OS (Android 8 through 16) to read Wi-Fi network names (`SSID`) and router MACs (`BSSID`).
+  * Without this permission, Android strictly redacts the SSID to `<unknown ssid>` and BSSID to `02:00:00:00:00:00`, preventing the app from distinguishing campus Wi-Fi from home or hotspot networks.
+* **Wi-Fi Suggestions & Switching (`WifiNetworkSuggestion`)**:
+  * Uses Android's `WifiNetworkSuggestion` API to prioritize campus networks (`priority=1000`).
+  * **Vivo (Funtouch OS / OriginOS)**: Displays a system notification: *"Allow PESU WiFi to suggest Wi-Fi networks?"*. Tap **Allow** once so Vivo permits automatic AP roaming.
+  * **Xiaomi (MIUI / HyperOS)**: Navigate to *App Info &rarr; Other permissions &rarr; "Change Wi-Fi connectivity"* and set it to **Always allow**.
+
+---
+
 ## App Architecture
 
 - **Language**: Kotlin 2.0

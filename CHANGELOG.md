@@ -56,13 +56,16 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 - **🏨 Amaatra Hostel Gateway (`172.16.1.1`) Resolution**:
   - Solved portal unreachable errors in Amaatra Hostel (`AMAATRA-HOSTEL`), where the default gateway is `172.16.1.1` on the `172.16.0.0/16` subnet rather than `192.168.1.1`.
   - Updated `PortalApi.AMAATRA_PORTAL_BASE` to `http://172.16.1.1:8090` (preserving `http://192.168.1.1:8090` as `AMAATRA_LEGACY_BASE`).
-  - `PortalRepository.resolvePortalBase()` now dynamically inspects the router default gateway `gw` and resolves directly to `http://$gw:8090` whenever connected to `172.16.*` or `10.*` subnets.
+  - `PortalRepository.resolvePortalBase()` now dynamically inspects the router default gateway `gw`: resolves directly to `http://$gw:8090` on Amaatra `172.16.*` subnets, and maps internal `10.*` campus VLAN gateways directly to centralized EC/RR Cyberoam (`http://192.168.254.1:8090`) with zero wasted probe cycles.
 - **🔍 Multi-Candidate Dynamic Gateway Probing & Captive HTTP Redirect Autodiscovery**:
-  - `PortalApi.isPortalOnline()` now dynamically probes a candidate list including the active gateway router base, Amaatra Hostel (`172.16.1.1:8090`), EC/RR Campus (`192.168.254.1:8090`), and legacy Amaatra (`192.168.1.1:8090`).
+  - `PortalApi.isPortalOnline()` now dynamically probes a prioritized candidate list: active base &rarr; EC/RR Campus (`192.168.254.1:8090`) &rarr; Amaatra Hostel (`172.16.1.1:8090`) &rarr; router gateway &rarr; legacy Amaatra (`192.168.1.1:8090`).
   - Added captive portal HTTP redirect detection on `http://connectivitycheck.gstatic.com/generate_204`: if Cyberoam intercepts outbound traffic, the app parses the HTTP 302/307 `Location` header to dynamically discover and bind to new campus portal gateways without hardcoding.
-- **🛡️ Android 16 (API 36) SSID & BSSID Redaction Resolution**:
+- **🛡️ Android 12–16 (API 31–36) SSID & BSSID Redaction Resolution**:
   - Removed `android:usesPermissionFlags="neverForLocation"` from `NEARBY_WIFI_DEVICES` in `AndroidManifest.xml` which previously forced the Android OS to suppress the SSID to `<unknown ssid>` and BSSID to `02:00:00:00:00:00`.
-  - Updated `MainActivity.promptRuntimePermissions()` to request `ACCESS_FINE_LOCATION` across all modern Android versions (13+ / 14 / 15 / 16), allowing `NetworkCapabilities` and `WifiInfo` to report the real SSID (`AMAATRA-HOSTEL`) and physical BSSID.
+  - Updated `MainActivity.promptRuntimePermissions()` to request `ACCESS_FINE_LOCATION` across all modern Android versions (13+ / 14 / 15 / 16), allowing `NetworkCapabilities` and `WifiInfo` to report the real SSID (`PESU-EC-Campus`, `AMAATRA-HOSTEL`) and physical BSSID.
+- **📱 OEM Wi-Fi Switching & Permissions (Vivo / Xiaomi)**:
+  - Documented Android's `WifiNetworkSuggestion` notification model on Vivo FuntouchOS / OriginOS (prompts user via notification to approve automatic campus network suggestions).
+  - Detailed Xiaomi MIUI / HyperOS "Change Wi-Fi connectivity" toggle under Other Permissions to enable background AP roaming.
 - **🏫 Campus Infrastructure Heuristics Hardening**:
   - Included `172.16.*` default gateways in `PortalRepository.isCampusInfrastructure` so the app instantly classifies the connection as PESU campus even before DHCP IP binding or if SSID is masked.
 
