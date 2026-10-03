@@ -390,8 +390,15 @@
             <input type="text" id="contactInfo" name="contact" placeholder="Email, Telegram, or WhatsApp handle if you'd like a follow-up">
           </div>
           <div class="form-group">
-            <label for="appVersion">App Version</label>
-            <input type="text" id="appVersion" name="app_version" value="v1.7.3" placeholder="e.g. v1.7.3">
+            <label for="appVersion">App Version <span class="req">*</span></label>
+            <select id="appVersion" name="app_version" required>
+              <option value="v1.7.3" selected>v1.7.3 (Latest)</option>
+              <option value="v1.7.2">v1.7.2</option>
+              <option value="v1.7.1">v1.7.1</option>
+              <option value="v1.7.0">v1.7.0</option>
+              <option value="Tester Track / Beta Build">Tester Track / Beta Build</option>
+              <option value="Older version / Not sure">Older version / Not sure</option>
+            </select>
           </div>
         </div>
 
@@ -451,6 +458,50 @@
         });
       }
 
+      // Automatically populate App Version dropdown with latest GitHub releases
+      var versionSelect = document.getElementById('appVersion');
+      if (versionSelect) {
+        fetch("https://api.github.com/repos/imyash0722/pesu-wifi-android/releases")
+          .then(function(res) {
+            if (!res.ok) throw new Error("Releases fetch error");
+            return res.json();
+          })
+          .then(function(releases) {
+            if (!Array.isArray(releases) || releases.length === 0) return;
+
+            versionSelect.innerHTML = "";
+
+            // Populate top 8 releases
+            var topReleases = releases.slice(0, 8);
+            topReleases.forEach(function(rel, index) {
+              var opt = document.createElement("option");
+              opt.value = rel.tag_name;
+              opt.textContent = rel.tag_name + (index === 0 ? " (Latest)" : "");
+              if (index === 0) opt.selected = true;
+              versionSelect.appendChild(opt);
+            });
+
+            var testerOpt = document.createElement("option");
+            testerOpt.value = "Tester Track / Beta Build";
+            testerOpt.textContent = "Tester Track / Beta Build";
+            versionSelect.appendChild(testerOpt);
+
+            var olderOpt = document.createElement("option");
+            olderOpt.value = "Older version / Not sure";
+            olderOpt.textContent = "Older version / Not sure";
+            versionSelect.appendChild(olderOpt);
+
+            // Also update the version badge in the header
+            var badge = document.querySelector('.guide-header .badge');
+            if (badge && topReleases[0]) {
+              badge.textContent = "Community Support • " + topReleases[0].tag_name;
+            }
+          })
+          .catch(function() {
+            // Keep default static options if GitHub API is unreachable
+          });
+      }
+
       form.addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -506,7 +557,6 @@
           if (descTextarea) {
             descTextarea.style.height = '130px';
           }
-          document.getElementById('appVersion').value = appVersion;
         })
         .catch(function(err) {
           submitBtn.disabled = false;
