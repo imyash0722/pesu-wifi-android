@@ -88,4 +88,57 @@ class PortalApiTest {
         assertEquals("nack", ack)
         org.junit.Assert.assertFalse(ack == "ack")
     }
+
+    @Test
+    fun testCampusSsidsExcludesDeletedAndIncludesRequired() {
+        val ssids = com.imyash.pesuwifi.data.PortalRepository.CAMPUS_SSIDS
+        assertTrue(ssids.contains("AMAATRA-HOSTEL"))
+        assertTrue(ssids.contains("PESU-EC-Campus"))
+        assertTrue(ssids.contains("PESU-RR-Campus"))
+        assertTrue(ssids.contains("PESU-CIE"))
+        assertTrue(ssids.contains("Foodcourt"))
+        assertTrue(ssids.contains("pes south cafe"))
+
+        org.junit.Assert.assertFalse(ssids.contains("PESU-Campus"))
+        org.junit.Assert.assertFalse(ssids.contains("PESU-WiFi"))
+        org.junit.Assert.assertFalse(ssids.contains("PES_WIFI"))
+        org.junit.Assert.assertFalse(ssids.contains("AMAATRA_HOSTEL"))
+    }
+
+    @Test
+    fun testWifiSuggestionTargets() {
+        val targets = com.imyash.pesuwifi.data.WifiSuggestionManager.CAMPUS_TARGETS
+        val amaatra = targets.firstOrNull { it.ssid == "AMAATRA-HOSTEL" && it.passphrase != null }
+        assertEquals("SouthPe$!t", amaatra?.passphrase)
+
+        val foodcourt = targets.firstOrNull { it.ssid == "Foodcourt" && it.passphrase != null }
+        assertEquals("PESU-EC-Campus", foodcourt?.passphrase)
+
+        val cafe = targets.firstOrNull { it.ssid == "pes south cafe" && it.passphrase != null }
+        assertEquals("PESU-EC-Campus", cafe?.passphrase)
+    }
+
+    @Test
+    fun testPortalBaseUrlDerivation() {
+        PortalApi.portalBaseUrl = "http://192.168.1.1:8090"
+        assertEquals("http://192.168.1.1:8090/login.xml", PortalApi.loginUrl)
+        assertEquals("http://192.168.1.1:8090/logout.xml", PortalApi.logoutUrl)
+        assertEquals("http://192.168.1.1:8090/live", PortalApi.liveUrl)
+        assertEquals("http://192.168.1.1:8090/httpclient.html", PortalApi.probeUrl)
+
+        PortalApi.portalBaseUrl = PortalApi.DEFAULT_PORTAL_BASE
+        assertEquals("http://192.168.254.1:8090/login.xml", PortalApi.loginUrl)
+    }
+
+    @Test
+    fun testKeepaliveIntervalWithJitter() {
+        assertEquals(120_000L, com.imyash.pesuwifi.service.WifiKeepaliveService.KEEPALIVE_BASE_INTERVAL_MS)
+        assertEquals(30_000L, com.imyash.pesuwifi.service.WifiKeepaliveService.KEEPALIVE_JITTER_MS)
+
+        repeat(50) {
+            val interval = com.imyash.pesuwifi.service.WifiKeepaliveService.getNextKeepaliveIntervalMs()
+            assertTrue("Interval $interval should be >= 90000ms", interval >= 90_000L)
+            assertTrue("Interval $interval should be <= 150000ms", interval <= 150_000L)
+        }
+    }
 }

@@ -114,7 +114,7 @@ fun FirstLaunchPermissionsDialog(
                 if (!permissionState.canScheduleExactAlarms) {
                     SetupPermissionRow(
                         icon = Icons.Default.Alarm,
-                        title = "Exact 60s Alarms",
+                        title = "Exact Keepalive Alarms",
                         description = "Wakes device periodically to verify gateway status",
                         isGranted = permissionState.canScheduleExactAlarms,
                         buttonText = "Enable",

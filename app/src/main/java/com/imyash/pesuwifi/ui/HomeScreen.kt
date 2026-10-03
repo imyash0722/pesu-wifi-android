@@ -343,7 +343,7 @@ fun HomeScreen(
             // ── Primary action button ─────────────────────────────────────
             Button(
                 onClick = {
-                    if (isLoggedIn) viewModel.logout() else viewModel.login()
+                    if (isLoggedIn) viewModel.logout() else viewModel.connectAndLogin()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -391,49 +391,32 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ── Daemon list tile (no card, minimal) ───────────────────────
+            // ── Background Keepalive status (Default / Always Active) ─────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Sync,
-                        contentDescription = null,
-                        modifier = Modifier.size(26.dp),
-                        tint = if (state.isDaemonRunning) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(14.dp))
-                    Column {
-                        Text(
-                            text = "Background Keepalive",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = if (state.isDaemonRunning) "Auto-reconnects every 60 s" else "Disabled",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Switch(
-                    checked = state.isDaemonRunning,
-                    onCheckedChange = {
-                        if (!state.isDaemonRunning && !state.permissionState.allEssentialGranted) {
-                            showPermissionsDialog = true
-                        } else {
-                            viewModel.toggleDaemon()
-                        }
-                    }
+                Icon(
+                    imageVector = Icons.Default.Sync,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = if (state.isDaemonRunning) StatusGreen else MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = "Background Keepalive",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = if (state.isDaemonRunning) "Continuous 120s keepalive active (±30s jitter)" else "Starting keepalive daemon...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             // Tester build only: persistent PermissionsCard for easy debug access

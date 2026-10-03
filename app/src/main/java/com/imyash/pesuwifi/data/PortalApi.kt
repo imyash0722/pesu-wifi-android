@@ -26,9 +26,13 @@ import kotlin.coroutines.resume
 object PortalApi {
     private const val TAG = "PesuWifiApi"
     const val DEFAULT_PORTAL_BASE = "http://192.168.254.1:8090"
+    const val AMAATRA_PORTAL_BASE = "http://192.168.1.1:8090"
 
     @Volatile
     var portalBaseUrl: String = DEFAULT_PORTAL_BASE
+
+    @Volatile
+    var detectedPortalBase: String? = null
 
     val loginUrl: String get() = "$portalBaseUrl/login.xml"
     val logoutUrl: String get() = "$portalBaseUrl/logout.xml"
@@ -100,34 +104,46 @@ object PortalApi {
 
     /**
      * Fast gateway check to determine if portal is reachable.
-     * Includes a fast jitter retry (300ms) to avoid false negatives during Wi-Fi packet drops.
+     * Probes current portalBaseUrl and automatically falls back to alternative campus base
+     * (e.g. 192.168.1.1 vs 192.168.254.1) dynamically if the current one is unreachable.
      */
     suspend fun isPortalOnline(): Boolean = withContext(Dispatchers.IO) {
-        suspend fun attempt(attemptNum: Int): Boolean {
+        suspend fun attempt(targetUrl: String, attemptNum: Int): Boolean {
             val start = System.currentTimeMillis()
             return try {
                 val request = Request.Builder()
-                    .url(probeUrl)
+                    .url(targetUrl)
                     .get()
                     .build()
                 val (code, ok) = getClient(2500, callTimeoutMs = 3000).newCall(request).execute().use { response ->
                     Pair(response.code, response.code in 200..499)
                 }
                 val latency = System.currentTimeMillis() - start
-                AppLogger.portal(TAG, "isPortalOnline probe(attempt=$attemptNum): reachable=$ok (HTTP $code, latency=${latency}ms, url=$probeUrl)")
+                AppLogger.portal(TAG, "isPortalOnline probe(attempt=$attemptNum): reachable=$ok (HTTP $code, latency=${latency}ms, url=$targetUrl)")
                 ok
             } catch (e: Exception) {
                 val latency = System.currentTimeMillis() - start
-                AppLogger.portal(TAG, "isPortalOnline probe(attempt=$attemptNum) unreachable: ${e.message} (latency=${latency}ms, url=$probeUrl)")
+                AppLogger.portal(TAG, "isPortalOnline probe(attempt=$attemptNum) unreachable: ${e.message} (latency=${latency}ms, url=$targetUrl)")
                 false
             }
         }
 
-        val first = attempt(1)
+        val first = attempt(probeUrl, 1)
         if (first) return@withContext true
 
+        // Dynamic gateway discovery: probe alternative candidate gateway base if current base failed
+        val candidateBase = if (portalBaseUrl == DEFAULT_PORTAL_BASE) AMAATRA_PORTAL_BASE else DEFAULT_PORTAL_BASE
+        val candidateProbe = "$candidateBase/httpclient.html"
+        val candidateSuccess = attempt(candidateProbe, 2)
+        if (candidateSuccess) {
+            AppLogger.portal(TAG, "Dynamic portal discovery succeeded! Switched portalBaseUrl to $candidateBase (was $portalBaseUrl)")
+            portalBaseUrl = candidateBase
+            detectedPortalBase = candidateBase
+            return@withContext true
+        }
+
         delay(300L)
-        attempt(2)
+        attempt(probeUrl, 3)
     }
 
     /**
@@ -202,12 +218,31 @@ object PortalApi {
                     .build()
                 val response = getClient(timeoutMs = 1500, callTimeoutMs = 2000).newCall(request).await()
                 val code = response.code
+                val redirectLocation = response.header("Location") ?: response.request.url.toString()
                 response.close()
                 val latency = System.currentTimeMillis() - start
                 val result = when (code) {
                     204 -> InternetProbeResult.ONLINE
                     in 200..399 -> {
-                        AppLogger.roam(TAG, "verifyInternetConnectivity: Captive portal intercept detected (HTTP $code, latency=${latency}ms)")
+                        AppLogger.roam(TAG, "verifyInternetConnectivity: Captive portal intercept detected (HTTP $code, location=$redirectLocation, latency=${latency}ms)")
+                        if (redirectLocation.contains(":8090")) {
+                            try {
+                                val uri = java.net.URI(redirectLocation)
+                                val host = uri.host
+                                val port = if (uri.port != -1) uri.port else 8090
+                                val scheme = uri.scheme ?: "http"
+                                if (!host.isNullOrBlank()) {
+                                    val detectedBase = "$scheme://$host:$port"
+                                    if (detectedBase != portalBaseUrl) {
+                                        AppLogger.portal(TAG, "Dynamic portal URL detected from captive redirect: $detectedBase (was $portalBaseUrl)")
+                                        portalBaseUrl = detectedBase
+                                        detectedPortalBase = detectedBase
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                AppLogger.w(TAG, "Failed to parse captive redirect URI: ${e.message}")
+                            }
+                        }
                         InternetProbeResult.CAPTIVE_PORTAL
                     }
                     else -> InternetProbeResult.FAILED

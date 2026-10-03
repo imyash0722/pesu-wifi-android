@@ -181,7 +181,8 @@ class WifiKeepaliveService : Service() {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-            val triggerAtMillis = SystemClock.elapsedRealtime() + KEEPALIVE_INTERVAL_MS
+            val interval = getNextKeepaliveIntervalMs()
+            val triggerAtMillis = SystemClock.elapsedRealtime() + interval
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 if (alarmManager.canScheduleExactAlarms()) {
                     alarmManager.setExactAndAllowWhileIdle(
@@ -209,7 +210,7 @@ class WifiKeepaliveService : Service() {
                     pendingIntent
                 )
             }
-            AppLogger.d(TAG, "Scheduled next heartbeat alarm via KeepaliveAlarmReceiver in ${KEEPALIVE_INTERVAL_MS / 1000}s")
+            AppLogger.d(TAG, "Scheduled next heartbeat alarm via KeepaliveAlarmReceiver in ${interval / 1000}s (120s base ± 30s jitter)")
         } catch (e: Exception) {
             AppLogger.w(TAG, "Could not schedule exact heartbeat alarm: ${e.message}")
         }
@@ -351,7 +352,7 @@ class WifiKeepaliveService : Service() {
         val status = portalRepository.statusFlow.value
         if (status.isPesuWifi) return true
         if (portalRepository.isCampusNetwork(activeWifiNetwork)) return true
-        if (lastSsid?.contains("PESU", ignoreCase = true) == true) return true
+        if (lastSsid != null && portalRepository.isCampusSsid(lastSsid)) return true
         if (wasCampusNetwork && status.isWifiConnected) return true
         return false
     }
@@ -480,7 +481,7 @@ class WifiKeepaliveService : Service() {
                 }
 
                 // If on campus, but gateway probe was temporarily unreachable, retry sooner (10s)
-                val sleepInterval = if (!status.isPortalOnline) 10_000L else KEEPALIVE_INTERVAL_MS
+                val sleepInterval = if (!status.isPortalOnline) 10_000L else getNextKeepaliveIntervalMs()
                 delay(sleepInterval)
             }
         }
@@ -571,8 +572,8 @@ class WifiKeepaliveService : Service() {
             val wm = wifiManager ?: return
             @Suppress("DEPRECATION")
             val results = wm.scanResults ?: return
-            val campusResults = results.filter { it.SSID.contains("PESU", ignoreCase = true) }
-            val otherResults = results.filter { !it.SSID.contains("PESU", ignoreCase = true) }
+            val campusResults = results.filter { portalRepository.isCampusSsid(it.SSID) }
+            val otherResults = results.filter { !portalRepository.isCampusSsid(it.SSID) }
             AppLogger.wifi(TAG, "[ScanResults] Detected ${results.size} APs in range (${campusResults.size} campus, ${otherResults.size} other, updated=$updated)")
             for (ap in campusResults) {
                 val ch = frequencyToChannel(ap.frequency)
@@ -804,7 +805,7 @@ class WifiKeepaliveService : Service() {
             }
         }
 
-        if (currentBssid != null && (wasCampusNetwork || isCampusNetworkActive() || currentSsid?.contains("PESU", ignoreCase = true) == true)) {
+        if (currentBssid != null && (wasCampusNetwork || isCampusNetworkActive() || (currentSsid != null && portalRepository.isCampusSsid(currentSsid)))) {
             BssidDatabase.record(
                 context = applicationContext,
                 bssid = currentBssid,
@@ -1012,7 +1013,7 @@ class WifiKeepaliveService : Service() {
                 try {
                     @Suppress("DEPRECATION")
                     val scanList = wm.scanResults
-                    val campusScan = scanList?.filter { it.SSID != null && it.SSID.contains("PESU", ignoreCase = true) }
+                    val campusScan = scanList?.filter { it.SSID != null && portalRepository.isCampusSsid(it.SSID) }
                     if (!campusScan.isNullOrEmpty()) {
                         AppLogger.watchdog(TAG, "  -> Visible campus APs (${campusScan.size}): ${campusScan.map { "${it.BSSID} (${it.level}dBm, ${it.frequency}MHz)" }}")
                     }
@@ -1178,7 +1179,16 @@ class WifiKeepaliveService : Service() {
 
     companion object {
         const val TAG = "PesuWifi"
-        const val KEEPALIVE_INTERVAL_MS = 60_000L
+        const val KEEPALIVE_BASE_INTERVAL_MS = 120_000L
+        const val KEEPALIVE_JITTER_MS = 30_000L
+        const val KEEPALIVE_INTERVAL_MS = KEEPALIVE_BASE_INTERVAL_MS
+
+        fun getNextKeepaliveIntervalMs(): Long {
+            // 120s base with ±30s jitter (90_000ms to 150_000ms)
+            val jitter = kotlin.random.Random.nextLong(-KEEPALIVE_JITTER_MS, KEEPALIVE_JITTER_MS + 1)
+            return (KEEPALIVE_BASE_INTERVAL_MS + jitter).coerceAtLeast(60_000L)
+        }
+
         const val REQUEST_HEARTBEAT = 100
 
         const val ACTION_START = "com.imyash.pesuwifi.action.START"

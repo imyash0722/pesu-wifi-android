@@ -112,7 +112,6 @@ class PortalRepository(
     fun isCampusSsid(ssid: String?): Boolean {
         if (ssid.isNullOrBlank()) return false
         val clean = ssid.replace("\"", "").trim()
-        if (clean.contains("PESU", ignoreCase = true)) return true
         return CAMPUS_SSIDS.any { it.equals(clean, ignoreCase = true) }
     }
 
@@ -196,15 +195,40 @@ class PortalRepository(
         return lp.routes.firstOrNull { it.isDefaultRoute }?.gateway?.hostAddress
     }
 
+    fun resolvePortalBase(wifiNet: Network? = null): String {
+        // 1. If dynamically detected via redirect or active candidate probe, use it
+        PortalApi.detectedPortalBase?.let { return it }
+
+        // 2. Dynamically check router default gateway
+        val gw = getDefaultGateway(wifiNet)
+        if (gw == "192.168.1.1") {
+            return PortalApi.AMAATRA_PORTAL_BASE
+        }
+        if (gw != null && gw.startsWith("192.168.254.")) {
+            return PortalApi.DEFAULT_PORTAL_BASE
+        }
+
+        // 3. Fallback: check SSID match
+        val ssid = getCurrentWifiSsid(wifiNet)
+        if (ssid != null && ssid.equals("AMAATRA-HOSTEL", ignoreCase = true)) {
+            return PortalApi.AMAATRA_PORTAL_BASE
+        }
+
+        // 4. Default fallback
+        return PortalApi.DEFAULT_PORTAL_BASE
+    }
+
     fun clearCampusCache() {
         lastConfirmedCampusNetwork = null
         lastConfirmedCampusSsid = null
         lastConfirmedCampusTime = 0L
+        PortalApi.detectedPortalBase = null
     }
 
     suspend fun refreshStatus(): PortalStatus = withContext(Dispatchers.IO) {
         val wifiNet = getWifiNetwork()
         val localIp = getWifiLocalAddress(wifiNet)
+        api.portalBaseUrl = resolvePortalBase(wifiNet)
         api.setWifiSocketFactory(wifiNet?.socketFactory, localIp)
 
         val activeUser = accountRepository.getActiveUser()
@@ -328,6 +352,7 @@ class PortalRepository(
 
     suspend fun login(targetUsername: String? = null): Result<String> = withContext(Dispatchers.IO) {
         val wifiNet = getWifiNetwork()
+        api.portalBaseUrl = resolvePortalBase(wifiNet)
         api.setWifiSocketFactory(wifiNet?.socketFactory, getWifiLocalAddress(wifiNet))
 
         val username = targetUsername ?: accountRepository.getActiveUser()
@@ -366,6 +391,7 @@ class PortalRepository(
 
     suspend fun logout(): Result<String> = withContext(Dispatchers.IO) {
         val wifiNet = getWifiNetwork()
+        api.portalBaseUrl = resolvePortalBase(wifiNet)
         api.setWifiSocketFactory(wifiNet?.socketFactory, getWifiLocalAddress(wifiNet))
 
         val username = accountRepository.getActiveUser() ?: "user"
@@ -377,13 +403,10 @@ class PortalRepository(
 
     companion object {
         val CAMPUS_SSIDS = setOf(
-            "AMAATRA_HOSTEL",
+            "AMAATRA-HOSTEL",
             "Foodcourt",
             "PESU-EC-Campus",
             "PESU-RR-Campus",
-            "PESU-Campus",
-            "PESU-WiFi",
-            "PES_WIFI",
             "PESU-CIE",
             "pes south cafe"
         )

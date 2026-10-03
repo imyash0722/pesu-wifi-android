@@ -2,6 +2,7 @@ package com.imyash.pesuwifi.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.PowerManager
 import android.os.SystemClock
@@ -10,15 +11,18 @@ import androidx.lifecycle.viewModelScope
 import com.imyash.pesuwifi.data.AccountRepository
 import com.imyash.pesuwifi.data.PortalRepository
 import com.imyash.pesuwifi.data.PortalStatus
+import com.imyash.pesuwifi.data.WifiSuggestionManager
 import com.imyash.pesuwifi.service.WifiKeepaliveService
 import com.imyash.pesuwifi.util.PermissionManager
 import com.imyash.pesuwifi.util.PermissionState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 data class UiState(
     val status: PortalStatus = PortalStatus(),
@@ -70,6 +74,8 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         refreshPermissions()
+        val context = getApplication<Application>().applicationContext
+        WifiKeepaliveService.start(context)
         refresh()
     }
 
@@ -101,7 +107,7 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
 
     private var lastLoginAttemptTime = 0L
 
-    fun login(targetUsername: String? = null) {
+    fun connectAndLogin() {
         val now = SystemClock.elapsedRealtime()
         if (_isLoading.value || (now - lastLoginAttemptTime) < 1500L) {
             return
@@ -110,17 +116,97 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-            _userMessage.value = null
+            _userMessage.value = "Preparing connection..."
             try {
-                val result = portalRepository.login(targetUsername)
-                if (result.isSuccess) {
-                    _userMessage.value = result.getOrNull() ?: "Signed in successfully"
-                } else {
-                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Login failed"
+                val context = getApplication<Application>().applicationContext
+                val wm = context.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+
+                // 1. Request to turn on Wi-Fi if disabled
+                if (wm?.isWifiEnabled != true) {
+                    _userMessage.value = "Requesting to turn on Wi-Fi..."
+                    WifiSuggestionManager.requestEnableWifi(context)
+                    withTimeoutOrNull(4000L) {
+                        while (wm?.isWifiEnabled != true) {
+                            delay(300L)
+                        }
+                    }
                 }
+
+                // 2. Scan and prioritize the strongest campus AP
+                if (wm?.isWifiEnabled == true) {
+                    _userMessage.value = "Scanning for strongest campus AP..."
+                    val strongest = WifiSuggestionManager.findStrongestCampusAp(context)
+                    if (strongest != null) {
+                        _userMessage.value = "Connecting to ${strongest.ssid} (${strongest.level} dBm)..."
+                        WifiSuggestionManager.prioritizeTarget(context, strongest.ssid, strongest.bssid)
+                    } else {
+                        try {
+                            @Suppress("DEPRECATION")
+                            wm.startScan()
+                        } catch (_: Exception) {}
+                        WifiSuggestionManager.ensureSuggestionRegistered(context, forceRefresh = true)
+                    }
+
+                    // Wait for association if not already on campus Wi-Fi (up to 8s)
+                    if (!portalRepository.isCampusNetwork()) {
+                        _userMessage.value = "Associating with campus Wi-Fi..."
+                        withTimeoutOrNull(8000L) {
+                            while (!portalRepository.isCampusNetwork()) {
+                                delay(400L)
+                            }
+                        }
+                    }
+                }
+
+                // 3. Ensure background keepalive daemon is active (default 120s)
+                WifiKeepaliveService.start(context)
+
+                // 4. Authenticate credentials with portal
+                _userMessage.value = "Signing in..."
+                val result = portalRepository.login()
+                if (result.isSuccess) {
+                    _userMessage.value = "Signed in as ${accountRepository.getActiveUser()}"
+                } else {
+                    val err = result.exceptionOrNull()?.message ?: "Login failed"
+                    _errorMessage.value = "Login failed: $err"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Connection failed: ${e.message}"
             } finally {
                 _isLoading.value = false
+                refresh()
             }
+        }
+    }
+
+    fun login(targetUsername: String? = null) {
+        if (targetUsername != null) {
+            val now = SystemClock.elapsedRealtime()
+            if (_isLoading.value || (now - lastLoginAttemptTime) < 1500L) {
+                return
+            }
+            lastLoginAttemptTime = now
+            viewModelScope.launch {
+                _isLoading.value = true
+                _errorMessage.value = null
+                _userMessage.value = "Signing in as '$targetUsername'..."
+                try {
+                    val context = getApplication<Application>().applicationContext
+                    WifiKeepaliveService.start(context)
+                    val result = portalRepository.login(targetUsername)
+                    if (result.isSuccess) {
+                        _userMessage.value = result.getOrNull() ?: "Signed in as $targetUsername"
+                    } else {
+                        val err = result.exceptionOrNull()?.message ?: "Login failed"
+                        _errorMessage.value = "Login failed for '$targetUsername': $err"
+                    }
+                } finally {
+                    _isLoading.value = false
+                    refresh()
+                }
+            }
+        } else {
+            connectAndLogin()
         }
     }
 

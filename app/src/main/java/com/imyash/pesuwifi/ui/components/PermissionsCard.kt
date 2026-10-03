@@ -174,7 +174,7 @@ fun PermissionsCard(
             // Exact Alarm Item
             PermissionItemRow(
                 icon = Icons.Default.Alarm,
-                title = "Exact 60s Alarms",
+                title = "Exact Keepalive Alarms",
                 description = "Watchdog alarm wakes CPU to check portal connection",
                 isGranted = permissionState.canScheduleExactAlarms,
                 buttonText = "Enable",
@@ -333,7 +333,7 @@ fun PermissionsRequiredDialog(
 
                 if (!permissionState.canScheduleExactAlarms) {
                     PermissionDialogRow(
-                        title = "Exact 60s Watchdog Alarms",
+                        title = "Exact Keepalive Alarms",
                         buttonText = "Allow",
                         onClick = onRequestExactAlarm
                     )

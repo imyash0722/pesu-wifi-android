@@ -16,6 +16,7 @@ class PesuWifiApp : Application() {
         AppLogger.init(this)
         createNotificationChannels()
         SystemRuleManager.registerAllRules(this)
+        com.imyash.pesuwifi.service.WifiKeepaliveService.start(this)
     }
 
     private fun createNotificationChannels() {
