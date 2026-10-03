@@ -168,12 +168,12 @@ body {
 
 /* Top-Right GitHub Button (Homepage) */
 .top-github-btn {
-  position: absolute;
+  position: fixed;
   top: 1.5rem;
   right: 1.5rem;
   padding: 0.75rem 1.15rem;
   border-radius: 14px;
-  z-index: 50;
+  z-index: 999;
 }
 
 /* Header & Typography */
