@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="dialogBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#675647" />
+      <stop offset="100%" stop-color="#3D352E" />
+    </linearGradient>
+    <filter id="dialogShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45" />
+    </filter>
+  </defs>
+
+  <!-- Background overlay simulating screen -->
+  <rect width="360" height="480" rx="36" fill="#1C1815" />
+
+  <!-- Status Bar Mock -->
+  <text x="32" y="32" fill="#C0BDBC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600">12:30</text>
+  <rect x="306" y="22" width="22" height="12" rx="3" fill="none" stroke="#C0BDBC" stroke-width="1.5" />
+  <rect x="308" y="24" width="16" height="8" rx="1.5" fill="#6C6E36" />
+
+  <!-- Dialog Card -->
+  <g filter="url(#dialogShadow)">
+    <rect x="24" y="90" width="312" height="310" rx="28" fill="#26201B" stroke="url(#dialogBorder)" stroke-width="1.5" />
+  </g>
+
+  <!-- App Icon in Dialog -->
+  <rect x="152" y="120" width="56" height="56" rx="16" fill="#6C6E36" />
+  <!-- Wifi icon simplified -->
+  <path d="M166 148 A16 16 0 0 1 194 148" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" />
+  <path d="M172 154 A8 8 0 0 1 188 154" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" />
+  <circle cx="180" cy="160" r="2.5" fill="#FFFFFF" />
+
+  <!-- Dialog Title -->
+  <text x="180" y="210" text-anchor="middle" fill="#F2EDE4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="700">Install PESU WiFi?</text>
+
+  <!-- Dialog Description -->
+  <text x="180" y="238" text-anchor="middle" fill="#DFD3B5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13">Do you want to install this application?</text>
+  <text x="180" y="260" text-anchor="middle" fill="#C0BDBC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12">Version 1.7.3 • Official Stable Build</text>
+
+  <!-- Sideload Security Info -->
+  <rect x="44" y="280" width="272" height="42" rx="12" fill="#2E251E" stroke="#3D352E" stroke-width="1" />
+  <circle cx="62" cy="301" r="8" fill="#6C6E36" fill-opacity="0.3" />
+  <text x="62" y="305" text-anchor="middle" fill="#E3BD90" font-size="11" font-weight="bold">✓</text>
+  <text x="78" y="297" fill="#DFD3B5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600">Allow from this source</text>
+  <text x="78" y="312" fill="#C0BDBC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10">Toggle ON if prompted by browser</text>
+
+  <!-- Action Buttons -->
+  <rect x="44" y="340" width="126" height="42" rx="12" fill="#2E2620" />
+  <text x="107" y="366" text-anchor="middle" fill="#C0BDBC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="600">Cancel</text>
+
+  <rect x="182" y="340" width="134" height="42" rx="12" fill="#6C6E36" />
+  <text x="249" y="366" text-anchor="middle" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700">Install</text>
+
+  <!-- Step badge -->
+  <rect x="135" y="425" width="90" height="24" rx="12" fill="#E3BD90" />
+  <text x="180" y="441" text-anchor="middle" fill="#2E251E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800">STEP 1: INSTALL</text>
+</svg>

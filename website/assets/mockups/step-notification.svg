@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="dialogBorder2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E3BD90" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#3D352E" />
+    </linearGradient>
+    <filter id="notifShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <!-- Background Screen -->
+  <rect width="360" height="480" rx="36" fill="#1C1815" />
+
+  <!-- Status Bar -->
+  <text x="32" y="32" fill="#C0BDBC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600">12:31</text>
+  <rect x="306" y="22" width="22" height="12" rx="3" fill="none" stroke="#C0BDBC" stroke-width="1.5" />
+  <rect x="308" y="24" width="16" height="8" rx="1.5" fill="#6C6E36" />
+
+  <!-- Notification shade mockup banner showing why it matters -->
+  <rect x="24" y="52" width="312" height="64" rx="16" fill="#2E251E" stroke="#3D352E" stroke-width="1" />
+  <circle cx="48" cy="84" r="14" fill="#6C6E36" />
+  <path d="M44 84 L47 87 L53 81" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" />
+  <text x="70" y="78" fill="#F2EDE4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700">PESU WiFi • Foreground Service</text>
+  <text x="70" y="94" fill="#DFD3B5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11">Active (120s heartbeat) • PESU-EC-Campus</text>
+
+  <!-- Runtime Permission Dialog -->
+  <g filter="url(#notifShadow)">
+    <rect x="24" y="136" width="312" height="280" rx="28" fill="#26201B" stroke="url(#dialogBorder2)" stroke-width="1.5" />
+  </g>
+
+  <!-- Bell Icon in Circular Badge -->
+  <circle cx="180" cy="180" r="26" fill="#6C6E36" fill-opacity="0.25" />
+  <path d="M174 170 C174 167 176 165 180 165 C184 165 186 167 186 170 C186 178 190 182 192 184 H168 C170 182 174 178 174 170 Z" fill="#E3BD90" />
+  <path d="M178 187 A2 2 0 0 0 182 187" stroke="#E3BD90" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Title -->
+  <text x="180" y="228" text-anchor="middle" fill="#F2EDE4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="17" font-weight="700">Allow PESU WiFi to send</text>
+  <text x="180" y="248" text-anchor="middle" fill="#F2EDE4" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="17" font-weight="700">you notifications?</text>
+
+  <!-- Description -->
+  <text x="180" y="278" text-anchor="middle" fill="#DFD3B5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12">Shows live connection state, keepalive heartbeat,</text>
+  <text x="180" y="296" text-anchor="middle" fill="#DFD3B5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12">&amp; essential AP roaming connection prompts</text>
+
+  <!-- Buttons -->
+  <rect x="44" y="324" width="272" height="38" rx="19" fill="#6C6E36" />
+  <text x="180" y="348" text-anchor="middle" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700">Allow</text>
+
+  <rect x="44" y="368" width="272" height="34" rx="17" fill="transparent" />
+  <text x="180" y="390" text-anchor="middle" fill="#C0BDBC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="500">Don't allow</text>
+
+  <!-- Step badge -->
+  <rect x="110" y="432" width="140" height="24" rx="12" fill="#E3BD90" />
+  <text x="180" y="448" text-anchor="middle" fill="#2E251E" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800">STEP 2: NOTIFICATIONS</text>
+</svg>

@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Step-by-step setup guide, AP switching instructions, and permission justifications for PESU WiFi on Android.">
+  <meta name="theme-color" content="#675647">
+
+  <title>Setup Guide &amp; Permissions — PESU WiFi</title>
+
+  <link rel="icon" type="image/svg+xml" href="./assets/icon.svg">
+  <link rel="stylesheet" href="./css/style.css?v=5">
+
+  <style>
+    /* Page Specific Layout */
+    .guide-container {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+    }
+
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      text-decoration: none;
+      color: var(--brand-title);
+      font-weight: 800;
+      font-size: 1.35rem;
+    }
+
+    .nav-brand img {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+    }
+
+    .nav-back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      transition: all 0.18s ease;
+    }
+
+    .nav-back-link:hover {
+      background: var(--btn-secondary-hover);
+      color: var(--text);
+    }
+
+    /* Hero Banner */
+    .guide-header {
+      margin-bottom: 3rem;
+    }
+
+    .guide-header h1 {
+      font-size: 2.3rem;
+      font-weight: 800;
+      color: var(--brand-title);
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin-bottom: 0.85rem;
+    }
+
+    .guide-header p {
+      font-size: 1.12rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 700px;
+    }
+
+    /* Crucial Notice Callout Box */
+    .notice-card {
+      background: #FFF8EE;
+      border: 2px solid #E3BD90;
+      border-radius: 20px;
+      padding: 1.75rem;
+      margin-bottom: 3.5rem;
+      display: flex;
+      gap: 1.25rem;
+      box-shadow: 0 10px 24px rgba(227, 189, 144, 0.25);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .notice-card {
+        background: #2E251E;
+        border-color: #A37C4C;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+    }
+
+    .notice-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .notice-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #7A531A;
+      margin-bottom: 0.5rem;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .notice-title {
+        color: #E3BD90;
+      }
+    }
+
+    .notice-body {
+      font-size: 1rem;
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    .notice-body strong {
+      color: var(--brand-title);
+    }
+
+    /* Steps Section */
+    .steps-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4rem;
+      margin-bottom: 4.5rem;
+    }
+
+    .step-item {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      align-items: center;
+      gap: 3rem;
+      padding: 2.25rem;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 24px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .step-item:hover {
+      box-shadow: 0 14px 28px rgba(103, 86, 71, 0.12);
+    }
+
+    .step-badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      border: 1px solid var(--badge-border);
+      margin-bottom: 0.85rem;
+    }
+
+    .step-title {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--brand-title);
+      margin-bottom: 1rem;
+      line-height: 1.25;
+    }
+
+    .step-desc {
+      font-size: 1.02rem;
+      color: var(--text);
+      line-height: 1.65;
+      margin-bottom: 1.25rem;
+    }
+
+    .step-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .step-list li {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+    }
+
+    .step-list li strong {
+      color: var(--text);
+    }
+
+    .step-list li::before {
+      content: "•";
+      color: var(--btn-primary-bg);
+      font-weight: bold;
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    .step-tip {
+      font-size: 0.9rem;
+      background: rgba(108, 110, 54, 0.12);
+      border-left: 3px solid var(--btn-primary-bg);
+      padding: 0.65rem 0.9rem;
+      border-radius: 0 8px 8px 0;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .step-mockup {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .step-mockup img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 20px;
+      filter: var(--shadow-mockup);
+      transition: transform 0.25s ease;
+    }
+
+    .step-mockup img:hover {
+      transform: scale(1.02);
+    }
+
+    /* OEM Section */
+    .oem-section {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      margin-bottom: 4.5rem;
+    }
+
+    .oem-section h2 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--brand-title);
+      margin-bottom: 0.75rem;
+    }
+
+    .oem-section p {
+      font-size: 1rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .oem-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .oem-card {
+      background: var(--bg);
+      border: 1px solid var(--surface-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .oem-brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--brand-title);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .oem-card ol {
+      padding-left: 1.2rem;
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .oem-card ol li {
+      margin-bottom: 0.4rem;
+    }
+
+    .oem-card strong {
+      color: var(--text);
+    }
+
+    /* Permissions Matrix */
+    .permissions-section {
+      margin-bottom: 4.5rem;
+    }
+
+    .permissions-section h2 {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--brand-title);
+      margin-bottom: 0.75rem;
+    }
+
+    .permissions-intro {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .permissions-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    .perm-card {
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 18px;
+      padding: 1.5rem 1.75rem;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .perm-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .perm-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--brand-title);
+    }
+
+    .perm-constant {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.76rem;
+      color: var(--btn-primary-bg);
+      background: rgba(108, 110, 54, 0.12);
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      word-break: break-all;
+      width: fit-content;
+    }
+
+    .perm-type-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--badge-text);
+      background: var(--badge-bg);
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      width: fit-content;
+      margin-top: 0.25rem;
+    }
+
+    .perm-justification {
+      font-size: 0.96rem;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .perm-justification strong {
+      color: var(--brand-title);
+    }
+
+    .perm-privacy {
+      margin-top: 0.5rem;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .perm-privacy-icon {
+      color: #2E7D32;
+      font-weight: bold;
+    }
+
+    /* CTA Section */
+    .guide-cta {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--surface-border);
+      border-radius: 24px;
+      margin-bottom: 3.5rem;
+    }
+
+    .guide-cta h2 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--brand-title);
+      margin-bottom: 0.75rem;
+    }
+
+    .guide-cta p {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .guide-cta .actions {
+      justify-content: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .guide-container {
+        padding: 1.5rem 1rem;
+      }
+
+      .step-item {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 1.75rem 1.25rem;
+      }
+
+      .perm-card {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+
+      .notice-card {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="guide-container">
+    
+    <!-- Top Navigation -->
+    <nav class="nav-bar">
+      <a href="./index.html" class="nav-brand">
+        <img src="./assets/icon.svg" alt="PESU WiFi Logo" width="38" height="38">
+        <span>PESU WiFi</span>
+      </a>
+      <a href="./index.html" class="nav-back-link">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Back to Home</span>
+      </a>
+    </nav>
+
+    <!-- Header -->
+    <header class="guide-header">
+      <span class="badge" style="margin-bottom: 0.85rem;">Official Documentation • v1.7.3</span>
+      <h1>Step-by-Step Setup &amp; Permission Justifications</h1>
+      <p>
+        Everything you need to configure PESU WiFi for seamless captive portal authentication, zero-drop standby, and smart campus AP roaming across PES University and Amaatra Hostel.
+      </p>
+    </header>
+
+    <!-- CRITICAL CALLOUT: AP SWITCHING PERMISSION ARRIVES AS NOTIFICATION -->
+    <aside class="notice-card" role="alert">
+      <div class="notice-icon">🔔</div>
+      <div>
+        <h2 class="notice-title">Important: AP Switching Permission Arrives as a Notification</h2>
+        <div class="notice-body">
+          Unlike standard Android permissions requested inside the app window, <strong>Wi-Fi Access Point Switching is handled directly by Android OS</strong> via <code>WifiNetworkSuggestion</code>.<br><br>
+          When you walk onto campus or into Amaatra Hostel, Android will display a <strong>system notification in your status bar / notification shade</strong>:
+          <br>
+          <em style="display:inline-block; margin: 0.4rem 0; font-weight:600; color:var(--brand-title);">"Connect to Wi-Fi network? PESU WiFi suggested connecting to PESU-EC-Campus"</em>
+          <br>
+          You must tap <strong>CONNECT</strong> on that notification once. This grants Android OS permission to seamlessly steer your device to the strongest campus router! 
+          This is why granting <strong>Notification permission</strong> in Step 2 is strictly required.
+        </div>
+      </div>
+    </aside>
+
+    <!-- STEP-BY-STEP VISUAL INSTRUCTIONS -->
+    <section class="steps-section" aria-label="Installation and Setup Steps">
+      
+      <!-- Step 1: Install -->
+      <article class="step-item">
+        <div class="step-content">
+          <span class="step-badge">Step 1</span>
+          <h2 class="step-title">Download &amp; Sideload the APK</h2>
+          <p class="step-desc">
+            Install the signed release APK directly onto your Android device without third-party app stores.
+          </p>
+          <ul class="step-list">
+            <li>Download <strong>pesu-wifi-v1.7.3-stable.apk</strong> from the official release page.</li>
+            <li>When opening the file, Android may warn about installing unknown apps.</li>
+            <li>Tap <strong>Settings</strong> and toggle on <strong>"Allow from this source"</strong> for your browser or file manager.</li>
+            <li>Tap <strong>Install</strong> to complete setup.</li>
+          </ul>
+          <div class="step-tip">
+            💡 <em>Safe &amp; Clean:</em> Built with Android Keystore encryption, zero trackers, and completely open source.
+          </div>
+        </div>
+        <div class="step-mockup">
+          <img src="./assets/mockups/step-install.svg" alt="Illustration of Step 1 APK Installation dialog" width="340" height="450" loading="lazy">
+        </div>
+      </article>
+
+      <!-- Step 2: Notifications -->
+      <article class="step-item">
+        <div class="step-content">
+          <span class="step-badge">Step 2</span>
+          <h2 class="step-title">Grant Notifications Permission</h2>
+          <p class="step-desc">
+            Essential on Android 13+ (API 33+) for running background keepalive and receiving the AP connection prompt.
+          </p>
+          <ul class="step-list">
+            <li>On first launch, a system prompt will ask: <strong>"Allow PESU WiFi to send you notifications?"</strong></li>
+            <li>Tap <strong>Allow</strong>.</li>
+            <li><strong>Why it's essential:</strong> Notifications maintain the Android Foreground Service (preventing Android from killing the keepalive engine during lectures) and are <em>mandatory</em> for delivering the AP switching connection notification.</li>
+          </ul>
+          <div class="step-tip">
+            🔔 <em>Tip:</em> The persistent notification displays your active IP, Wi-Fi SSID, and includes a 1-tap Disconnect button.
+          </div>
+        </div>
+        <div class="step-mockup">
+          <img src="./assets/mockups/step-notification.svg" alt="Illustration of Step 2 Notification Permission prompt" width="340" height="450" loading="lazy">
+        </div>
+      </article>
+
+      <!-- Step 3: Battery & Alarms -->
+      <article class="step-item">
+        <div class="step-content">
+          <span class="step-badge">Step 3</span>
+          <h2 class="step-title">Whitelist Battery &amp; Exact Alarms</h2>
+          <p class="step-desc">
+            Cyberoam firewalls drop idle sessions after 3 minutes (180s). Unrestricted battery settings ensure background heartbeats fire on schedule when your phone is in your pocket.
+          </p>
+          <ul class="step-list">
+            <li>In the in-app setup dialog, tap <strong>Whitelist</strong> next to <em>Unrestricted Battery</em>.</li>
+            <li>In system settings, set App battery usage to <strong>Unrestricted</strong>.</li>
+            <li>Tap <strong>Enable</strong> next to <em>Exact Keepalive Alarms</em> and toggle <strong>Alarms &amp; reminders</strong> to Allowed.</li>
+            <li>Return to the app and tap <strong>"Already set in Settings? Confirm"</strong> if prompted.</li>
+          </ul>
+          <div class="step-tip">
+            ⚡ <em>Battery Friendly:</em> Uses a microscopic 120s RTC heartbeat (&plusmn;30s jitter) that consumes less than 0.2% battery over a 10-hour day.
+          </div>
+        </div>
+        <div class="step-mockup">
+          <img src="./assets/mockups/step-battery.svg" alt="Illustration of Step 3 Battery Optimization and Exact Alarms settings" width="340" height="450" loading="lazy">
+        </div>
+      </article>
+
+      <!-- Step 4: AP Switching Notification -->
+      <article class="step-item" style="border: 2px solid var(--badge-border);">
+        <div class="step-content">
+          <span class="step-badge" style="background:#6C6E36; color:#FFF;">Step 4 • Crucial</span>
+          <h2 class="step-title">Approve the AP Switching Notification</h2>
+          <p class="step-desc">
+            Android's system security model requires users to approve suggested Wi-Fi networks via a system notification.
+          </p>
+          <ul class="step-list">
+            <li>When near a campus router (e.g. <code>PESU-EC-Campus</code>, <code>PESU-RR-Campus</code>, <code>AMAATRA-HOSTEL</code>), pull down your <strong>Notification Drawer</strong>.</li>
+            <li>Locate the notification from <strong>Android System • Wi-Fi</strong> titled: <br><strong>"Connect to Wi-Fi network? PESU WiFi suggested connecting..."</strong></li>
+            <li>Tap the blue/accent <strong>CONNECT</strong> action button.</li>
+            <li>Once approved, Android permanently allows PESU WiFi to steer your device between campus routers and twin access points with zero manual steps!</li>
+          </ul>
+          <div class="step-tip">
+            📶 <em>Note:</em> If you accidentally dismiss it, simply reconnect to campus Wi-Fi or toggle Wi-Fi OFF and ON in quick settings.
+          </div>
+        </div>
+        <div class="step-mockup">
+          <img src="./assets/mockups/step-ap-notification.svg" alt="Illustration of Step 4 Android System Notification for Wi-Fi Suggestion" width="340" height="450" loading="lazy">
+        </div>
+      </article>
+
+      <!-- Step 5: Account & Connect -->
+      <article class="step-item">
+        <div class="step-content">
+          <span class="step-badge">Step 5</span>
+          <h2 class="step-title">Add Account &amp; Connect</h2>
+          <p class="step-desc">
+            Store your student credentials securely and authenticate to the Cyberoam portal with a single tap.
+          </p>
+          <ul class="step-list">
+            <li>Enter your <strong>PRN / SRN</strong> (e.g., <code>PES1UG20CS001</code>) and campus Wi-Fi password.</li>
+            <li>Passwords are encrypted locally with <strong>AES-256 GCM</strong> inside the Android Keystore.</li>
+            <li>Tap <strong>Save Account &amp; Connect</strong>.</li>
+            <li>The app verifies captive portal reachability in &lt;100ms, logs you in, and engages the background keepalive guard!</li>
+          </ul>
+          <div class="step-tip">
+            👥 <em>Multi-Account:</em> Add roommate or lab partner accounts in the Accounts tab to switch active credentials in 1 tap.
+          </div>
+        </div>
+        <div class="step-mockup">
+          <img src="./assets/mockups/step-account.svg" alt="Illustration of Step 5 Account credentials form" width="340" height="450" loading="lazy">
+        </div>
+      </article>
+
+    </section>
+
+    <!-- OEM BRAND SPECIFIC SETTINGS -->
+    <section class="oem-section">
+      <h2>Manufacturer-Specific Background Settings</h2>
+      <p>
+        Some Android manufacturers (MIUI, HyperOS, One UI, ColorOS) include custom aggressive battery managers that aggressively kill background apps unless explicitly permitted. Follow your device's instructions below:
+      </p>
+
+      <div class="oem-grid">
+        <!-- Xiaomi -->
+        <div class="oem-card">
+          <h3 class="oem-brand-title">
+            <span>📱</span> Xiaomi / Redmi / POCO
+          </h3>
+          <p style="font-size:0.85rem; color:var(--btn-primary-bg); font-weight:700; margin-bottom:0.5rem;">MIUI / HyperOS</p>
+          <ol>
+            <li>Long-press <strong>PESU WiFi</strong> app icon &rarr; tap <strong>App Info (ℹ️)</strong>.</li>
+            <li>Open <strong>Other permissions</strong> &rarr; find <strong>"Change Wi-Fi connectivity"</strong> &rarr; select <strong>Always allow</strong>.</li>
+            <li>Toggle <strong>Autostart</strong> to <strong>ON</strong>.</li>
+            <li>Under <strong>Battery saver</strong>, select <strong>No restrictions</strong>.</li>
+          </ol>
+        </div>
+
+        <!-- Samsung -->
+        <div class="oem-card">
+          <h3 class="oem-brand-title">
+            <span>📱</span> Samsung Galaxy
+          </h3>
+          <p style="font-size:0.85rem; color:var(--btn-primary-bg); font-weight:700; margin-bottom:0.5rem;">One UI</p>
+          <ol>
+            <li>Open <strong>Settings</strong> &rarr; <strong>Battery and device care</strong> &rarr; <strong>Battery</strong>.</li>
+            <li>Tap <strong>Background usage limits</strong>.</li>
+            <li>Tap <strong>Never sleeping apps</strong> &rarr; tap <strong>+</strong> &rarr; add <strong>PESU WiFi</strong>.</li>
+            <li>In App Info &rarr; <strong>Battery</strong> &rarr; choose <strong>Unrestricted</strong>.</li>
+          </ol>
+        </div>
+
+        <!-- OnePlus / Oppo / Realme -->
+        <div class="oem-card">
+          <h3 class="oem-brand-title">
+            <span>📱</span> OnePlus / Oppo / Realme
+          </h3>
+          <p style="font-size:0.85rem; color:var(--btn-primary-bg); font-weight:700; margin-bottom:0.5rem;">OxygenOS / ColorOS</p>
+          <ol>
+            <li>Long-press app icon &rarr; <strong>App Info</strong> &rarr; <strong>Battery usage</strong>.</li>
+            <li>Enable <strong>Allow background activity</strong>.</li>
+            <li>Enable <strong>Allow auto-launch</strong>.</li>
+            <li>Ensure battery optimization is set to <strong>Don't optimize</strong>.</li>
+          </ol>
+        </div>
+
+        <!-- Vivo / iQOO -->
+        <div class="oem-card">
+          <h3 class="oem-brand-title">
+            <span>📱</span> Vivo / iQOO
+          </h3>
+          <p style="font-size:0.85rem; color:var(--btn-primary-bg); font-weight:700; margin-bottom:0.5rem;">FuntouchOS / OriginOS</p>
+          <ol>
+            <li>Open <strong>Settings</strong> &rarr; <strong>Battery</strong> &rarr; <strong>Background power consumption management</strong>.</li>
+            <li>Locate <strong>PESU WiFi</strong>.</li>
+            <li>Select <strong>High background power consumption</strong> to prevent silent termination.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMPREHENSIVE PERMISSIONS JUSTIFICATION -->
+    <section class="permissions-section">
+      <h2>Complete Permissions Justification &amp; Privacy</h2>
+      <p class="permissions-intro">
+        PESU WiFi operates with complete transparency. We request only the minimal permissions required to interact with campus Wi-Fi hardware and firewalls. All logic is open source and auditable.
+      </p>
+
+      <div class="permissions-grid">
+        
+        <!-- POST_NOTIFICATIONS -->
+        <div class="perm-card">
+          <div class="perm-header">
+            <span class="perm-name">Notifications</span>
+            <code class="perm-constant">POST_NOTIFICATIONS</code>
+            <span class="perm-type-badge">Runtime (Android 13+)</span>
+          </div>
+          <div>
+            <div class="perm-justification">
+              <strong>Why PESU WiFi needs this:</strong>
+              Required to run the persistent Foreground Service status notification in your pull-down shade showing active Wi-Fi link speed, gateway IP, and 1-tap Disconnect. Crucially, it allows Android to deliver the <strong>Wi-Fi Network Suggestion prompt</strong> so you can approve automated campus AP roaming.
+            </div>
+            <div class="perm-privacy">
+              <span class="perm-privacy-icon">🔒</span>
+              <span>No spam or promotional notifications; only live connection state and critical portal alerts.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- REQUEST_IGNORE_BATTERY_OPTIMIZATIONS -->
+        <div class="perm-card">
+          <div class="perm-header">
+            <span class="perm-name">Unrestricted Battery</span>
+            <code class="perm-constant">IGNORE_BATTERY_OPTIMIZATIONS</code>
+            <span class="perm-type-badge">System Whitelist</span>
+          </div>
+          <div>
+            <div class="perm-justification">
+              <strong>Why PESU WiFi needs this:</strong>
+              Cyberoam firewalls expire inactive connections after 180 seconds. When your phone screen turns off, Android's Doze mode freezes background network sockets and deferred timers. Whitelisting the app ensures the 120s keepalive pulse fires punctually so your device never drops off the campus network.
+            </div>
+            <div class="perm-privacy">
+              <span class="perm-privacy-icon">🔒</span>
+              <span>Extremely light: wakes CPU for less than 150 milliseconds every 2 minutes. Negligible battery draw (&lt;0.2% per day).</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCHEDULE_EXACT_ALARM -->
+        <div class="perm-card">
+          <div class="perm-header">
+            <span class="perm-name">Exact Keepalive Alarms</span>
+            <code class="perm-constant">SCHEDULE_EXACT_ALARM</code>
+            <span class="perm-type-badge">System Permission (Android 12+)</span>
+          </div>
+          <div>
+            <div class="perm-justification">
+              <strong>Why PESU WiFi needs this:</strong>
+              Standard inexact Android alarms can be delayed by 15 to 30 minutes to batch wakeups. Because the captive portal expires at 3 minutes, inexact alarms guarantee disconnection. Exact RTC alarms wake the CPU exactly on time to send the keepalive ping before the firewall drops the session.
+            </div>
+            <div class="perm-privacy">
+              <span class="perm-privacy-icon">🔒</span>
+              <span>Used exclusively for internal 120s (&plusmn;30s jittered) watchdog keepalive scheduling.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOCATION (FINE, COARSE, BACKGROUND) -->
+        <div class="perm-card">
+          <div class="perm-header">
+            <span class="perm-name">Wi-Fi Network Identification</span>
+            <code class="perm-constant">ACCESS_FINE_LOCATION</code>
+            <code class="perm-constant" style="margin-top:2px;">ACCESS_BACKGROUND_LOCATION</code>
+            <span class="perm-type-badge">Runtime / System</span>
+          </div>
+          <div>
+            <div class="perm-justification">
+              <strong>Why PESU WiFi needs this:</strong>
+              Google considers Wi-Fi SSID (network name) and BSSID (access point MAC address) to be location-sensitive metadata in Android 8 through 12. Without this permission, Android returns <code>&lt;unknown ssid&gt;</code> and empty Wi-Fi scan results, making it technically impossible to detect whether you are connected to <code>PESU-EC-Campus</code> or <code>AMAATRA-HOSTEL</code>.
+            </div>
+            <div class="perm-privacy">
+              <span class="perm-privacy-icon">🔒</span>
+              <span><strong>Zero GPS Tracking:</strong> The app never requests GPS coordinates, never accesses satellite location, and transmits no location data whatsoever.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- NEARBY_WIFI_DEVICES -->
+        <div class="perm-card">
+          <div class="perm-header">
+            <span class="perm-name">Nearby Wi-Fi Devices</span>
+            <code class="perm-constant">NEARBY_WIFI_DEVICES</code>
+            <span class="perm-type-badge">Runtime (Android 13+)</span>
+          </div>
+          <div>
+            <div class="perm-justification">
+              <strong>Why PESU WiFi needs this:</strong>
+              Introduced in Android 13 to allow apps to discover and interact with nearby Wi-Fi routers without needing location tracking permissions. Configured with <code>neverForLocation</code> flag in the manifest.
+            </div>
+            <div class="perm-privacy">
+              <span class="perm-privacy-icon">🔒</span>
+              <span>Strictly decoupled from physical GPS location.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHANGE_WIFI_STATE / CHANGE_NETWORK_STATE -->
+        <div class="perm-card">
+          <div class="perm-header">
+            <span class="perm-name">Network Suggestion &amp; Sockets</span>
+            <code class="perm-constant">CHANGE_WIFI_STATE</code>
+            <code class="perm-constant" style="margin-top:2px;">CHANGE_NETWORK_STATE</code>
+            <span class="perm-type-badge">Normal Permission</span>
+          </div>
+          <div>
+            <div class="perm-justification">
+              <strong>Why PESU WiFi needs this:</strong>
+              Allows the app to register <code>WifiNetworkSuggestion</code> targets with the Android system (e.g. PESU-EC-Campus, PESU-RR-Campus, AMAATRA-HOSTEL) and bind HTTP OkHttp authentication sockets directly to the Wi-Fi network interface to bypass VPNs or cellular data interference.
+            </div>
+            <div class="perm-privacy">
+              <span class="perm-privacy-icon">🔒</span>
+              <span>Does not alter private saved Wi-Fi networks or personal mobile data configurations.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTERNET & NETWORK STATE -->
+        <div class="perm-card">
+          <div class="perm-header">
+            <span class="perm-name">Captive Portal Communication</span>
+            <code class="perm-constant">INTERNET</code>
+            <code class="perm-constant" style="margin-top:2px;">ACCESS_NETWORK_STATE</code>
+            <span class="perm-type-badge">Normal Permission</span>
+          </div>
+          <div>
+            <div class="perm-justification">
+              <strong>Why PESU WiFi needs this:</strong>
+              Sends HTTP POST authentication requests and keepalive XML heartbeats to campus Cyberoam gateways (<code>172.16.1.1:8090</code>, <code>10.*.*.*:8090</code>) and checks connectivity status.
+            </div>
+            <div class="perm-privacy">
+              <span class="perm-privacy-icon">🔒</span>
+              <span>The app communicates <strong>only</strong> with local campus captive portal gateways. It never phones home or contacts external servers.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- WAKE_LOCK & BOOT_COMPLETED -->
+        <div class="perm-card">
+          <div class="perm-header">
+            <span class="perm-name">WakeLock &amp; Boot Listener</span>
+            <code class="perm-constant">WAKE_LOCK</code>
+            <code class="perm-constant" style="margin-top:2px;">RECEIVE_BOOT_COMPLETED</code>
+            <span class="perm-type-badge">Normal Permission</span>
+          </div>
+          <div>
+            <div class="perm-justification">
+              <strong>Why PESU WiFi needs this:</strong>
+              <code>WAKE_LOCK</code> holds a brief 200ms CPU lock while transmitting a keepalive packet so the phone doesn't sleep mid-request. <code>RECEIVE_BOOT_COMPLETED</code> re-registers Wi-Fi connection listeners when you restart your phone so auto-login continues working seamlessly.
+            </div>
+            <div class="perm-privacy">
+              <span class="perm-privacy-icon">🔒</span>
+              <span>WakeLock automatically releases within milliseconds. Zero permanent battery drain.</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CALL TO ACTION & FOOTER -->
+    <section class="guide-cta">
+      <h2>Ready to Get Started?</h2>
+      <p>Download the latest verified stable APK and enjoy uninterrupted Wi-Fi across campus.</p>
+      
+      <div class="actions">
+        <a href="https://github.com/imyash0722/pesu-wifi-android/releases/latest" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download Stable APK (v1.7.3)</span>
+        </a>
+
+        <a href="./index.html" class="btn btn-secondary">
+          <span>Return to Homepage</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" style="justify-content: space-between; flex-wrap: wrap;">
+      <div>
+        <span>PESU WiFi • Open Source under MIT License</span>
+      </div>
+      <div>
+        <a href="https://github.com/imyash0722/pesu-wifi-android" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+        <span>•</span>
+        <a href="https://github.com/imyash0722/pesu-wifi-android/releases" target="_blank" rel="noopener noreferrer">All Releases</a>
+      </div>
+    </footer>
+
+  </div>
+
+</body>
+</html>
