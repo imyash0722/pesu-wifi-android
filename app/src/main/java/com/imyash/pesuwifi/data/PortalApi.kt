@@ -402,7 +402,7 @@ object PortalApi {
                 .post(formBody)
                 .build()
 
-            getClient(8000).newCall(request).execute().use { response ->
+            getClient(3500, callTimeoutMs = 4500).newCall(request).execute().use { response ->
                 val latency = System.currentTimeMillis() - start
                 val body = response.body?.string() ?: ""
                 val parsed = parseXml(body)

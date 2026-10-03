@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.7.3 — Home UI Revert, Explicit Disconnect State Fix & Keepalive Section Cleanup](#v173--home-ui-revert-explicit-disconnect-state-fix--keepalive-section-cleanup)
+  - [Overview & Major Highlights](#v173-overview--major-highlights)
 - [v1.7.2 — Minimalist Unified UI & AP Roaming Notification Fix](#v172--minimalist-unified-ui--ap-roaming-notification-fix)
   - [Overview & Major Highlights](#v172-overview--major-highlights)
 - [v1.7.1 — Amaatra Hostel 172.16.1.1 Gateway Resolution & Modern Android SSID Unmasking](#v171--amaatra-hostel-1721611-gateway-resolution--modern-android-ssid-unmasking)
@@ -41,6 +43,37 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.7.3 — Home UI Revert, Explicit Disconnect State Fix & Keepalive Section Cleanup
+
+**Release Date:** October 3, 2026  
+**Git Tag:** [`v1.7.3`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.3)  
+**Release Type:** UI Revert & Disconnect Loop Bugfix  
+**APK Assets:**  
+- `pesu-wifi-v1.7.3-stable.apk` (Production / Stable track)  
+- `pesu-wifi-v1.7.3-tester.apk` (Tester track with universal diagnostic logs & telemetry)  
+
+### v1.7.3 Overview & Major Highlights
+
+- **⏮️ UI Reverted to Two-Button Layout (With Keepalive Row Removed)**:
+  - Reverted the Home screen UI back to the preferred dual-element layout:
+    - Retained the top bar with "PESU WiFi" title, Refresh icon, and Diagnostics/Logs icon.
+    - Retained the status pill chip ("Authenticated", "Connected, not logged in", etc.).
+    - Retained the dedicated active account chip for switching accounts.
+    - Retained the full-width primary Connect/Disconnect button.
+  - Removed the "Background Keepalive" status row per user preference while keeping the 120s jittered keepalive daemon fully active in the background.
+- **🛑 Resolved Red "Disconnect" Loop & Explicit Logout State Override**:
+  - Fixed an issue where opening the app showed a red "Disconnect" button, and clicking it displayed "Disconnected" without transitioning the button form to "Connect" (clicking repeatedly stayed stuck on "Disconnected").
+  - Root cause: When `logout()` was executed, `PortalRepository.refreshStatus()` was invoked immediately afterwards; because Android's `NetworkCapabilities` cached `NET_CAPABILITY_VALIDATED` for several seconds before tearing down routes, the fallback heuristic in `refreshStatus()` re-asserted `isLoggedIn = true`, overriding the user's manual sign-out!
+  - Added explicit logout state tracking (`isExplicitLogout`). When the user clicks Disconnect:
+    - `isExplicitLogout` is immediately flagged `true`.
+    - `_statusFlow` instantly transitions `isLoggedIn = false`, causing the UI button to switch to "Connect" (primary color) with the login icon.
+    - `refreshStatus()` suppresses the `NET_CAPABILITY_VALIDATED` heuristic from resurrecting `isLoggedIn = true` when an explicit logout was requested.
+    - Background services (`WifiKeepaliveService` and `WifiWakeupReceiver`) skip automatic re-authentication so the session stays disconnected until the user taps "Connect" or associates with a new Wi-Fi network.
+- **⚡ Snappy Logout Timeout**:
+  - Reduced logout socket timeout from 8000ms to 3500ms so attempting to disconnect when the campus portal is unreachable responds promptly without freezing the UI.
 
 ---
 

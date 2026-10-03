@@ -383,6 +383,10 @@ class WifiKeepaliveService : Service() {
                     reportConnectivityValidated()
                     logScanResults(false)
                 } else {
+                    if (portalRepository.isExplicitlyLoggedOut()) {
+                        AppLogger.d(TAG, "User explicitly logged out. Skipping re-authentication.")
+                        return
+                    }
                     val caps = activeWifiNetwork?.let { connectivityManager.getNetworkCapabilities(it) }
                     val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
                     val isCaptive = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
@@ -714,6 +718,7 @@ class WifiKeepaliveService : Service() {
             val status = portalRepository.statusFlow.value
             val isKnownCampus = isCampusNetworkActive()
             if (status.isWifiConnected && (status.isPesuWifi || isKnownCampus)) {
+                portalRepository.clearExplicitLogout()
                 wasCampusNetwork = true
                 AppLogger.i(TAG, "Campus Wi-Fi confirmed on connection")
                 if (!status.isLoggedIn && !isAuthBackoffActive) {
@@ -886,6 +891,10 @@ class WifiKeepaliveService : Service() {
                 reportConnectivityValidated()
                 return@launch
             }
+            if (portalRepository.isExplicitlyLoggedOut()) {
+                AppLogger.d(TAG, "User explicitly logged out. Skipping fast roaming re-auth.")
+                return@launch
+            }
 
             val activeUser = accountRepository.getActiveUser()
             if (activeUser != null) {
@@ -920,6 +929,7 @@ class WifiKeepaliveService : Service() {
         lastBssid = null
         lastIpAddresses = emptyList()
         lastGateway = null
+        portalRepository.clearCampusCache()
         updateTelemetry()
         reconnectJob?.cancel()
         loopJob?.cancel()

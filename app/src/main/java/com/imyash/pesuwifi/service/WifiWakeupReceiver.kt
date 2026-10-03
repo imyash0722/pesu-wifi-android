@@ -128,6 +128,10 @@ class WifiWakeupReceiver : BroadcastReceiver() {
             AppLogger.i(TAG, "OS Event: SSID='$currentSsid', BSSID='$currentBssid', isCampus=$isCampus, isCaptivePortal=$isCaptivePortal, isValidated=$isValidated")
 
             if (isCampus) {
+                if (portalRepo.isExplicitlyLoggedOut()) {
+                    AppLogger.d(TAG, "User explicitly logged out. Skipping wakeup auto-authentication.")
+                    return
+                }
                 val pingOk = RouterPing.pingGateway(gateway, network = network)
                 AppLogger.d(TAG, "Router ping ($gateway): success=$pingOk")
 

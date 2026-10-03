@@ -45,6 +45,15 @@ class PortalRepository(
     @Volatile
     private var lastConfirmedCampusTime: Long = 0L
 
+    @Volatile
+    private var isExplicitLogout: Boolean = false
+
+    fun isExplicitlyLoggedOut(): Boolean = isExplicitLogout
+
+    fun clearExplicitLogout() {
+        isExplicitLogout = false
+    }
+
     fun getWifiLocalAddress(wifiNet: Network? = null): InetAddress? {
         val net = wifiNet ?: getWifiNetwork() ?: return null
         val lp = connectivityManager?.getLinkProperties(net) ?: return null
@@ -233,6 +242,7 @@ class PortalRepository(
         lastConfirmedCampusNetwork = null
         lastConfirmedCampusSsid = null
         lastConfirmedCampusTime = 0L
+        isExplicitLogout = false
         PortalApi.detectedPortalBase = null
     }
 
@@ -285,7 +295,7 @@ class PortalRepository(
                 val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
                 val isCaptive = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
 
-                val isInternetUp = (isValidated && !isCaptive) || (api.verifyInternetConnectivity() == PortalApi.InternetProbeResult.ONLINE)
+                val isInternetUp = !isExplicitLogout && ((isValidated && !isCaptive) || (api.verifyInternetConnectivity() == PortalApi.InternetProbeResult.ONLINE))
                 if (isInternetUp) {
                     consecutiveProbeFailures = 0
                     val status = PortalStatus(
@@ -303,7 +313,7 @@ class PortalRepository(
                     return@withContext status
                 }
 
-                // Truly offline or captive portal
+                // Truly offline, captive portal, or explicitly logged out
                 val status = PortalStatus(
                     isWifiConnected = true,
                     isPesuWifi = true, // Preserve campus classification so keepalive loop does not terminate
@@ -312,10 +322,10 @@ class PortalRepository(
                     activeUsername = activeUser,
                     latencyMs = latency,
                     lastCheckedTimestamp = System.currentTimeMillis(),
-                    statusMessage = "PESU Wi-Fi: Gateway probe unreachable (roaming or VPN active)"
+                    statusMessage = if (isExplicitLogout) "PESU Wi-Fi connected (Logged out)" else "PESU Wi-Fi: Gateway probe unreachable (roaming or VPN active)"
                 )
                 _statusFlow.value = status
-                AppLogger.roam("PortalRepository", "refreshStatus: Campus network active (SSID='$currentSsid', IP='${localIp?.hostAddress}'), but gateway unreachable and internet offline. Preserving campus mode (latency ${latency}ms)")
+                AppLogger.roam("PortalRepository", "refreshStatus: Campus network active (SSID='$currentSsid', IP='${localIp?.hostAddress}'), but gateway unreachable (explicitLogout=$isExplicitLogout). Preserving campus mode (latency ${latency}ms)")
                 return@withContext status
             } else {
                 // Truly external Wi-Fi (Home, Hotspot, Office) where PESU gateway does not exist
@@ -336,7 +346,7 @@ class PortalRepository(
         }
 
         val targetUser = activeUser ?: "test"
-        var loggedIn = api.checkLive(targetUser)
+        var loggedIn = if (isExplicitLogout) false else api.checkLive(targetUser)
 
         if (loggedIn) {
             // Verify real internet routing to catch "Zombie Sessions" (Cyberoam says live, but AP intercepts)
@@ -366,7 +376,7 @@ class PortalRepository(
             val caps = connectivityManager?.getNetworkCapabilities(wifiNet)
             val isValidated = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
             val isCaptive = caps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) == true
-            if (isValidated && !isCaptive) {
+            if (!isExplicitLogout && isValidated && !isCaptive) {
                 AppLogger.i("PortalRepository", "refreshStatus: checkLive returned false for '$targetUser', but Android confirms network is VALIDATED. Preserving loggedIn=true.")
                 loggedIn = true
             }
@@ -395,6 +405,7 @@ class PortalRepository(
     }
 
     suspend fun login(targetUsername: String? = null): Result<String> = withContext(Dispatchers.IO) {
+        isExplicitLogout = false
         val wifiNet = getWifiNetwork()
         api.portalBaseUrl = resolvePortalBase(wifiNet)
         api.setWifiSocketFactory(wifiNet?.socketFactory, getWifiLocalAddress(wifiNet))
@@ -434,9 +445,23 @@ class PortalRepository(
     }
 
     suspend fun logout(): Result<String> = withContext(Dispatchers.IO) {
+        isExplicitLogout = true
         val wifiNet = getWifiNetwork()
         api.portalBaseUrl = resolvePortalBase(wifiNet)
         api.setWifiSocketFactory(wifiNet?.socketFactory, getWifiLocalAddress(wifiNet))
+
+        // Immediately update statusFlow so UI switches to disconnected state without waiting
+        val current = _statusFlow.value
+        _statusFlow.value = current.copy(
+            isLoggedIn = false,
+            statusMessage = "PESU Wi-Fi connected (Logged out)"
+        )
+
+        wifiNet?.let { net ->
+            try {
+                connectivityManager?.reportNetworkConnectivity(net, false)
+            } catch (_: Exception) {}
+        }
 
         val username = accountRepository.getActiveUser() ?: "user"
         AppLogger.i("PortalRepository", "Initiating logout for $username")
