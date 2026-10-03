@@ -455,7 +455,14 @@ fun HomeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(28.dp))
+            Text(
+                text = "PESU WiFi v${BuildConfig.VERSION_NAME}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                fontSize = 12.sp
+            )
+            Spacer(modifier = Modifier.height(32.dp))
         }
 
         if (showPermissionsDialog) {

@@ -47,7 +47,7 @@
         <service
             android:name=".service.WifiKeepaliveService"
             android:foregroundServiceType="dataSync|location"
-            android:exported="true" />
+            android:exported="false" />
 
         <service
             android:name=".service.PesuTileService"
@@ -75,7 +75,7 @@
 
         <receiver
             android:name=".service.KeepaliveAlarmReceiver"
-            android:exported="true" />
+            android:exported="false" />
 
         <receiver
             android:name=".service.WifiWakeupReceiver"

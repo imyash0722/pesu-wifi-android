@@ -282,13 +282,15 @@ class WifiKeepaliveService : Service() {
                 }
             }
             ACTION_SET_TEST_ACCOUNT -> {
-                val user = intent?.getStringExtra("username") ?: "PES1UG20CS001"
-                val pass = intent?.getStringExtra("password") ?: "testpassword"
-                accountRepository.saveAccount(user, pass)
-                accountRepository.setActiveUser(user)
-                AppLogger.i(TAG, "Test account saved: $user")
-                serviceScope.launch {
-                    performKeepaliveCheck(force = true)
+                if (BuildConfig.DEBUG) {
+                    val user = intent?.getStringExtra("username") ?: "PES1UG20CS001"
+                    val pass = intent?.getStringExtra("password") ?: "testpassword"
+                    accountRepository.saveAccount(user, pass)
+                    accountRepository.setActiveUser(user)
+                    AppLogger.i(TAG, "Test account saved: $user")
+                    serviceScope.launch {
+                        performKeepaliveCheck(force = true)
+                    }
                 }
             }
             ACTION_START -> {

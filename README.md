@@ -2,9 +2,9 @@
 
 Native Android companion app for PESU captive portal login, session management, and continuous keepalive. Replicates the core logic of the `pesu-wifi` CLI with a clean Material 3 interface and background Foreground Service.
 
-[![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases)
-[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.6.0-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.6.0/pesu-wifi-v1.6.0-stable.apk)
-[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.6.0-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.6.0/pesu-wifi-v1.6.0-tester.apk)
+[![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)
+[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.6.1-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.6.1/pesu-wifi-v1.6.1-stable.apk)
+[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.6.1-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.6.1/pesu-wifi-v1.6.1-tester.apk)
 [![Changelog](https://img.shields.io/badge/Changelog-Release_Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -80,9 +80,31 @@ adb install -r app/build/outputs/apk/beta/release/app-beta-release.apk
 
 ---
 
+## 📱 Quick Setup Guide for Students
+
+1. **Download & Install**:
+   - Download the latest **[Stable APK (v1.6.1)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)**.
+   - If prompted by your browser or files app, tap **Allow from this source** to permit sideload installation.
+2. **Permissions on First Launch**:
+   - **Notifications**: Tap **Allow** (displays ongoing connection status and quick Disconnect action).
+   - **Unrestricted Battery**: Tap **Whitelist** to stop Android from freezing the keepalive heartbeat when your screen is locked.
+3. **Manufacturer Battery Settings (Crucial for 24/7 Background Keepalive)**:
+   - **Vivo / iQOO**: Phone Settings → Apps → PESU WiFi → Battery → Select **"Allow high background power consumption"** (or Unrestricted). In the app, tap *"Already set in Settings? Confirm"*.
+   - **Xiaomi / Redmi / POCO**: Settings → Apps → PESU WiFi → Battery saver → Select **"No restrictions"**. Enable **Autostart**.
+   - **Samsung (OneUI)**: Settings → Apps → PESU WiFi → Battery → Select **"Unrestricted"**.
+   - **OnePlus / Oppo / Realme (ColorOS / OxygenOS)**: Settings → Apps → PESU WiFi → Battery → Enable **"Allow background activity"** and **"Allow auto-launch"**.
+4. **⚠️ Private DNS Tip**:
+   - If your phone has **Private DNS** enabled (e.g. Cloudflare `1.1.1.1` or AdGuard), Android encrypts all DNS lookups through external public servers. Those public servers cannot resolve PES University's internal login portal (`http://192.168.254.1:8090`).
+   - **Fix**: Go to Settings → Network & internet (or Connection & sharing) → **Private DNS** → Set to **Automatic** or **Off** while on campus.
+
+---
+
 ## Release History & Changelog
 
 See [**CHANGELOG.md**](CHANGELOG.md) for full commit-by-commit technical breakdowns:
+- [**v1.6.1**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.6.1) — OEM external battery whitelist manual override, first-launch permissions cold-boot prompt, top bar UI declutter, and internal service hardening.
+- [**v1.6.0**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.6.0) — Unified Android system call AP switching (v1.5) with continuous 60s keepalive engine (v1.4), RouterPing ICMP/TCP reachability verification, Android 16 (API 36) compatibility, and 16 KB page-aligned packaging.
+- [**v1.5.0**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.5.0) — Campus AP scale, Cyberoam DoS lockout protection, 1-tap debounced account switching, and resilient auto-reconnect.
 - [**v1.4.6**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.6) — Classroom Wi-Fi subnet detection, VPN (Tailscale) interface-binding fallback, timeout hardening, transient drop debouncing, and vivid UI theme polish.
 - [**v1.4.5**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.5) — Material You redesign, dual flavor builds (Stable & Tester), campus BSSID cataloging, 1-tap account switch & auto-reconnect, and Android back navigation gesture fixes.
 - [**v1.4.1**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.4.1) — Campus AP auto-reconnect via `WifiNetworkSuggestion`, zero-latency fast re-auth (<150ms), 15-minute adaptive watchdog, and 1-tap Wi-Fi Settings panel.

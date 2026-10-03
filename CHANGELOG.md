@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.6.1 — OEM Battery Whitelist Manual Override, First-Launch Prompt Fix & Security Hardening](#v161--oem-battery-whitelist-manual-override-first-launch-prompt-fix--security-hardening)
+  - [Overview & Major Highlights](#v161-overview--major-highlights)
 - [v1.6.0 — Unified OS-Level AP Switching, 60s Keepalive Engine & Android 16 Support](#v160--unified-os-level-ap-switching-60s-keepalive-engine--android-16-support)
   - [Overview & Major Highlights](#v160-overview--major-highlights)
 - [v1.5.0 — Campus AP Scale, Account Switching Debounce & Resilient Auto-Reconnect](#v150--campus-ap-scale-account-switching-debounce--resilient-auto-reconnect)
@@ -33,6 +35,33 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.6.1 — OEM Battery Whitelist Manual Override, First-Launch Prompt Fix & Security Hardening
+
+**Release Date:** October 3, 2026  
+**Git Tag:** [`v1.6.1`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.6.1)  
+**Release Type:** Critical Bugfix & Production Hardening Release  
+**APK Assets:**  
+- `pesu-wifi-v1.6.1-stable.apk` (Production / Stable track)  
+- `pesu-wifi-v1.6.1-tester.apk` (Tester track with diagnostic logs & telemetry)  
+
+### v1.6.1 Overview & Major Highlights
+
+- **🔋 OEM Battery Optimization Override (Vivo, Xiaomi, Samsung Workaround)**:
+  - Resolved the persistent issue on custom Android skins (Vivo FuntouchOS/OriginOS, Xiaomi MIUI/HyperOS, Samsung OneUI) where users configured *"Allow high background power consumption"* or *"Unrestricted"* in Phone Settings, but standard AOSP `PowerManager.isIgnoringBatteryOptimizations` still returned `false`.
+  - Added persistent override state (`setBatteryOptimizationOverride`) with 1-tap confirmation: *"Already set in Settings? Confirm"* across `FirstLaunchPermissionsDialog`, `PermissionsRequiredDialog`, and `PermissionsCard`.
+  - Tapping **"Start Anyway"** on the permissions dialog now automatically sets the override so the user is never prompted again.
+- **🚀 Fixed First-Launch Runtime Permissions Prompt**:
+  - Unconditionally invokes `promptRuntimePermissions()` on cold install in `MainActivity.onCreate()` (requesting `POST_NOTIFICATIONS` and `NEARBY_WIFI_DEVICES` on Android 13+, and location on Android ≤12).
+  - Fixed a race condition where `PermissionState` defaulted to all `true`, which previously caused `HomeScreen` to prematurely suppress the first-launch setup dialog on fresh installs.
+- **🔒 Production Security Hardening**:
+  - Changed `WifiKeepaliveService` and `KeepaliveAlarmReceiver` from `android:exported="true"` to `android:exported="false"`, preventing unauthorized third-party apps from sending explicit intents or waking the service.
+  - Guarded debug test actions (`ACTION_SET_TEST_ACCOUNT`) behind `BuildConfig.DEBUG`.
+- **🎨 UI Polish & Version Visibility**:
+  - Removed duplicate `ManageAccounts` icon from top bar (already prominently positioned above the Connect button).
+  - Added version footer badge (`PESU WiFi v1.6.1`) to the bottom of the home screen for easy peer troubleshooting.
 
 ---
 
