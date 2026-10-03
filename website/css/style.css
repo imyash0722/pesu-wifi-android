@@ -79,6 +79,7 @@ body {
   background-color: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,6 +164,50 @@ body {
   background: var(--btn-secondary-hover);
   color: var(--text);
   transform: translateY(-1px);
+}
+
+.nav-icon-link {
+  padding: 0.5rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand-title);
+}
+
+.nav-icon-link:hover {
+  color: var(--btn-primary-bg);
+}
+
+/* Top-Right GitHub Corner Link */
+.github-corner-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background-color: var(--surface);
+  border: 1px solid var(--surface-border);
+  color: var(--brand-title);
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(103, 86, 71, 0.08);
+  z-index: 50;
+}
+
+.github-corner-btn:hover {
+  background-color: var(--btn-secondary-hover);
+  color: var(--btn-primary-bg);
+  border-color: var(--badge-border);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(103, 86, 71, 0.16);
+}
+
+.github-corner-btn:active {
+  transform: translateY(0);
 }
 
 /* Header & Typography */
@@ -916,5 +961,12 @@ body {
 
   .form-actions .btn {
     width: 100%;
+  }
+
+  .github-corner-btn {
+    top: 1rem;
+    right: 1rem;
+    width: 38px;
+    height: 38px;
   }
 }
