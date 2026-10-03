@@ -92,17 +92,18 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
+    val initialPermissions = remember { PermissionManager.getPermissionState(context) }
     var showAddAccountDialog by remember { mutableStateOf(false) }
     var showPermissionsDialog by remember { mutableStateOf(false) }
     var showFirstLaunchDialog by remember {
         mutableStateOf(
             !PermissionManager.hasSeenFirstLaunchPrompt(context) &&
-                !state.permissionState.allEssentialGranted
+                !initialPermissions.allEssentialGranted
         )
     }
 
-    LaunchedEffect(Unit) {
-        if (!PermissionManager.hasSeenFirstLaunchPrompt(context) && state.permissionState.allEssentialGranted) {
+    LaunchedEffect(state.permissionState.allEssentialGranted) {
+        if (state.permissionState.allEssentialGranted && !PermissionManager.hasSeenFirstLaunchPrompt(context)) {
             PermissionManager.setSeenFirstLaunchPrompt(context, true)
         }
     }
@@ -448,7 +449,13 @@ fun HomeScreen(
                     onRequestNotification = onRequestNotification,
                     onRequestBatteryOptimization = onRequestBatteryOptimization,
                     onRequestExactAlarm = onRequestExactAlarm,
-                    onRequestAutostart = onRequestAutostart
+                    onRequestAutostart = onRequestAutostart,
+                    onAcknowledgeExternalBattery = {
+                        viewModel.setBatteryOptimizationOverride(true)
+                    },
+                    onResetBatteryOverride = {
+                        viewModel.setBatteryOptimizationOverride(false)
+                    }
                 )
             }
 
@@ -461,7 +468,11 @@ fun HomeScreen(
                 onRequestNotification = onRequestNotification,
                 onRequestBatteryOptimization = onRequestBatteryOptimization,
                 onRequestExactAlarm = onRequestExactAlarm,
+                onAcknowledgeExternalBattery = {
+                    viewModel.setBatteryOptimizationOverride(true)
+                },
                 onStartAnyway = {
+                    viewModel.setBatteryOptimizationOverride(true)
                     showPermissionsDialog = false
                     viewModel.toggleDaemon()
                 },
@@ -485,16 +496,22 @@ fun HomeScreen(
                 onRequestNotification = onRequestNotification,
                 onRequestBatteryOptimization = onRequestBatteryOptimization,
                 onRequestExactAlarm = onRequestExactAlarm,
+                onAcknowledgeExternalBattery = {
+                    viewModel.setBatteryOptimizationOverride(true)
+                },
                 onGrantAll = {
-                    PermissionManager.setSeenFirstLaunchPrompt(context, true)
                     if (state.permissionState.allEssentialGranted) {
+                        PermissionManager.setSeenFirstLaunchPrompt(context, true)
                         showFirstLaunchDialog = false
                     } else {
                         when {
-                            !state.permissionState.isBatteryOptimizationIgnored -> onRequestBatteryOptimization()
                             !state.permissionState.isNotificationGranted -> onRequestNotification()
+                            !state.permissionState.isBatteryOptimizationIgnored -> onRequestBatteryOptimization()
                             !state.permissionState.canScheduleExactAlarms -> onRequestExactAlarm()
-                            else -> showFirstLaunchDialog = false
+                            else -> {
+                                PermissionManager.setSeenFirstLaunchPrompt(context, true)
+                                showFirstLaunchDialog = false
+                            }
                         }
                     }
                 },

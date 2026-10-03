@@ -47,6 +47,8 @@ fun PermissionsCard(
     onRequestBatteryOptimization: () -> Unit,
     onRequestExactAlarm: () -> Unit,
     onRequestAutostart: () -> Unit,
+    onAcknowledgeExternalBattery: () -> Unit = {},
+    onResetBatteryOverride: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (permissionState.allEssentialGranted && !permissionState.hasAutostartSettings) {
@@ -104,14 +106,68 @@ fun PermissionsCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Battery Optimization Item
-            PermissionItemRow(
-                icon = Icons.Default.BatteryAlert,
-                title = "Unrestricted Battery",
-                description = "Prevents system from pausing keepalive when screen is off",
-                isGranted = permissionState.isBatteryOptimizationIgnored,
-                buttonText = "Whitelist",
-                onActionClick = onRequestBatteryOptimization
-            )
+            if (permissionState.isBatteryOptimizationOverridden) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = StatusGreen,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Unrestricted Battery",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Active (Manually Confirmed)",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 11.sp,
+                                color = StatusGreen
+                            )
+                        }
+                    }
+                    TextButton(
+                        onClick = onResetBatteryOverride,
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text("Reset", fontSize = 11.sp)
+                    }
+                }
+            } else {
+                PermissionItemRow(
+                    icon = Icons.Default.BatteryAlert,
+                    title = "Unrestricted Battery",
+                    description = "Prevents system from pausing keepalive when screen is off",
+                    isGranted = permissionState.isBatteryOptimizationIgnored,
+                    buttonText = "Whitelist",
+                    onActionClick = onRequestBatteryOptimization
+                )
+                if (!permissionState.isBatteryOptimizationIgnored) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    TextButton(
+                        onClick = onAcknowledgeExternalBattery,
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(
+                            text = "Already allowed in Settings? Confirm",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -217,6 +273,7 @@ fun PermissionsRequiredDialog(
     onRequestNotification: () -> Unit,
     onRequestBatteryOptimization: () -> Unit,
     onRequestExactAlarm: () -> Unit,
+    onAcknowledgeExternalBattery: () -> Unit = {},
     onStartAnyway: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -259,7 +316,19 @@ fun PermissionsRequiredDialog(
                         buttonText = "Whitelist",
                         onClick = onRequestBatteryOptimization
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
+                    TextButton(
+                        onClick = onAcknowledgeExternalBattery,
+                        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(
+                            text = "Already allowed in Settings? Confirm",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
 
                 if (!permissionState.canScheduleExactAlarms) {

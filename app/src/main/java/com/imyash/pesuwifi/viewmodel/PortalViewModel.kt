@@ -65,7 +65,7 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = UiState()
+        initialValue = UiState(permissionState = PermissionManager.getPermissionState(application))
     )
 
     init {
@@ -76,6 +76,12 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
     fun refreshPermissions() {
         val context = getApplication<Application>().applicationContext
         _permissionState.value = PermissionManager.getPermissionState(context)
+    }
+
+    fun setBatteryOptimizationOverride(overridden: Boolean = true) {
+        val context = getApplication<Application>().applicationContext
+        PermissionManager.setBatteryOptimizationOverride(context, overridden)
+        refreshPermissions()
     }
 
     fun checkBatteryOptimization() {

@@ -47,6 +47,7 @@ fun FirstLaunchPermissionsDialog(
     onRequestNotification: () -> Unit,
     onRequestBatteryOptimization: () -> Unit,
     onRequestExactAlarm: () -> Unit,
+    onAcknowledgeExternalBattery: () -> Unit = {},
     onGrantAll: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -92,8 +93,11 @@ fun FirstLaunchPermissionsDialog(
                     title = "Unrestricted Battery",
                     description = "Prevents Android from freezing keepalive when screen is off",
                     isGranted = permissionState.isBatteryOptimizationIgnored,
+                    isOverridden = permissionState.isBatteryOptimizationOverridden,
                     buttonText = "Whitelist",
-                    onAction = onRequestBatteryOptimization
+                    onAction = onRequestBatteryOptimization,
+                    secondaryActionText = "Already set in Settings? Confirm",
+                    onSecondaryAction = onAcknowledgeExternalBattery
                 )
 
                 // Notifications
@@ -144,8 +148,11 @@ private fun SetupPermissionRow(
     title: String,
     description: String,
     isGranted: Boolean,
+    isOverridden: Boolean = false,
     buttonText: String,
-    onAction: () -> Unit
+    onAction: () -> Unit,
+    secondaryActionText: String? = null,
+    onSecondaryAction: (() -> Unit)? = null
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -154,48 +161,67 @@ private fun SetupPermissionRow(
         ),
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(10.dp)
         ) {
-            Icon(
-                imageVector = if (isGranted) Icons.Default.CheckCircle else icon,
-                contentDescription = null,
-                tint = if (isGranted) StatusGreen else StatusAmber,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (isGranted) Icons.Default.CheckCircle else icon,
+                    contentDescription = null,
+                    tint = if (isGranted) StatusGreen else StatusAmber,
+                    modifier = Modifier.size(22.dp)
                 )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                if (isGranted) {
+                    Text(
+                        text = if (isOverridden) "Active (Confirmed)" else "Active",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = StatusGreen
+                    )
+                } else {
+                    OutlinedButton(
+                        onClick = onAction,
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier.height(30.dp)
+                    ) {
+                        Text(text = buttonText, fontSize = 11.sp)
+                    }
+                }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            if (isGranted) {
-                Text(
-                    text = "Active",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = StatusGreen
-                )
-            } else {
-                OutlinedButton(
-                    onClick = onAction,
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                    modifier = Modifier.height(30.dp)
+            if (!isGranted && secondaryActionText != null && onSecondaryAction != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                TextButton(
+                    onClick = onSecondaryAction,
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                    modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text(text = buttonText, fontSize = 11.sp)
+                    Text(
+                        text = secondaryActionText,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }

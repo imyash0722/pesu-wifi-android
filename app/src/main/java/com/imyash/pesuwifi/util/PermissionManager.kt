@@ -14,10 +14,11 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 
 data class PermissionState(
-    val isNotificationGranted: Boolean = true,
-    val isBatteryOptimizationIgnored: Boolean = true,
-    val canScheduleExactAlarms: Boolean = true,
-    val hasAutostartSettings: Boolean = false
+    val isNotificationGranted: Boolean = false,
+    val isBatteryOptimizationIgnored: Boolean = false,
+    val canScheduleExactAlarms: Boolean = false,
+    val hasAutostartSettings: Boolean = false,
+    val isBatteryOptimizationOverridden: Boolean = false
 ) {
     val allEssentialGranted: Boolean
         get() = isNotificationGranted && isBatteryOptimizationIgnored && canScheduleExactAlarms
@@ -36,6 +37,7 @@ object PermissionManager {
 
     private const val PREFS_SETTINGS = "pesu_wifi_settings"
     private const val KEY_SEEN_FIRST_LAUNCH_PROMPT = "has_seen_first_launch_prompt"
+    private const val KEY_BATTERY_OPTIMIZATION_OVERRIDE = "battery_optimization_override"
 
     fun hasSeenFirstLaunchPrompt(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
@@ -47,12 +49,23 @@ object PermissionManager {
         prefs.edit().putBoolean(KEY_SEEN_FIRST_LAUNCH_PROMPT, seen).apply()
     }
 
+    fun isBatteryOptimizationOverridden(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_BATTERY_OPTIMIZATION_OVERRIDE, false)
+    }
+
+    fun setBatteryOptimizationOverride(context: Context, overridden: Boolean = true) {
+        val prefs = context.getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_BATTERY_OPTIMIZATION_OVERRIDE, overridden).apply()
+    }
+
     fun getPermissionState(context: Context): PermissionState {
         return PermissionState(
             isNotificationGranted = isNotificationPermissionGranted(context),
             isBatteryOptimizationIgnored = isBatteryOptimizationIgnored(context),
             canScheduleExactAlarms = canScheduleExactAlarms(context),
-            hasAutostartSettings = hasAutostartSettings(context)
+            hasAutostartSettings = hasAutostartSettings(context),
+            isBatteryOptimizationOverridden = isBatteryOptimizationOverridden(context)
         )
     }
 
@@ -68,6 +81,9 @@ object PermissionManager {
     }
 
     fun isBatteryOptimizationIgnored(context: Context): Boolean {
+        if (isBatteryOptimizationOverridden(context)) {
+            return true
+        }
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
             pm?.isIgnoringBatteryOptimizations(context.packageName) ?: true
