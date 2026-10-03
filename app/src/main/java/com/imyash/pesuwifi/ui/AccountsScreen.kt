@@ -151,10 +151,8 @@ fun AccountsScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable {
-                                // Select the account AND auto-reconnect with it immediately
-                                viewModel.selectActiveUser(username)
-                                viewModel.login(username)
+                            .clickable(enabled = !state.isLoading) {
+                                viewModel.switchAccount(username)
                             },
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(

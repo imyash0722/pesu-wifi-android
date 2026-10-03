@@ -401,11 +401,15 @@ class WifiKeepaliveService : Service() {
                                 AppLogger.e(TAG, "Re-authentication failed: $err")
                                 val cooldownMs = if (err.contains("password", ignoreCase = true) || err.contains("credential", ignoreCase = true)) {
                                     60_000L // 60s cooldown for invalid credentials
-                                } else {
+                                } else if (err.contains("account", ignoreCase = true) || err.contains("lock", ignoreCase = true)) {
                                     30_000L // 30s auto-expiring cooldown for temporary server lock
+                                } else {
+                                    2_000L // Fast 2s retry for transient network/socket/DHCP errors during handover
                                 }
                                 authBackoffUntilTimestamp = SystemClock.elapsedRealtime() + cooldownMs
-                                AppLogger.w(TAG, "Auth backoff active for ${cooldownMs / 1000}s. Automatic retries paused temporarily.")
+                                if (cooldownMs > 2000L) {
+                                    AppLogger.w(TAG, "Auth backoff active for ${cooldownMs / 1000}s. Automatic retries paused temporarily.")
+                                }
                             }
                             updateForegroundNotification()
                         } else {
@@ -718,11 +722,15 @@ class WifiKeepaliveService : Service() {
                             val err = result.exceptionOrNull()?.message ?: ""
                             val cooldownMs = if (err.contains("password", ignoreCase = true) || err.contains("credential", ignoreCase = true)) {
                                 60_000L
-                            } else {
+                            } else if (err.contains("account", ignoreCase = true) || err.contains("lock", ignoreCase = true)) {
                                 30_000L
+                            } else {
+                                2_000L // 2s fast retry for transient socket/DHCP settling
                             }
                             authBackoffUntilTimestamp = SystemClock.elapsedRealtime() + cooldownMs
-                            AppLogger.w(TAG, "Auth backoff active for ${cooldownMs / 1000}s after connection auth failure")
+                            if (cooldownMs > 2000L) {
+                                AppLogger.w(TAG, "Auth backoff active for ${cooldownMs / 1000}s after connection auth failure")
+                            }
                         }
                         updateForegroundNotification()
                     }
@@ -875,6 +883,7 @@ class WifiKeepaliveService : Service() {
                 } else {
                     val err = result.exceptionOrNull()?.message ?: ""
                     AppLogger.w(TAG, "⚡ Fast re-auth attempt result: $err (will fallback to normal check)")
+                    lastFastAuthIp = null
                 }
                 updateForegroundNotification()
             }
@@ -896,8 +905,12 @@ class WifiKeepaliveService : Service() {
         loopJob?.cancel()
         loopJob = null
         consecutiveFailureCount = 0
-        releaseLocks()
-        cancelHeartbeat()
+
+        // If we were on campus Wi-Fi, keep locks active so CPU does not suspend during reconnect watchdog!
+        if (!hadCampus) {
+            releaseLocks()
+            cancelHeartbeat()
+        }
 
         val activeNet = connectivityManager.activeNetwork
         val activeCaps = connectivityManager.getNetworkCapabilities(activeNet)
@@ -920,14 +933,19 @@ class WifiKeepaliveService : Service() {
         val wm = wifiManager ?: return
 
         if (!wm.isWifiEnabled) {
+            releaseLocks()
+            cancelHeartbeat()
             AppLogger.watchdog(TAG, "Auto-reconnect watchdog cancelled: Wi-Fi radio is toggled OFF by user.")
             return
         }
 
-        // Immediately re-assert Wi-Fi network suggestion so Android matches any campus AP
+        // Keep CPU awake and Wi-Fi radio active during initial search
+        acquireLocks()
+
+        // Ensure Wi-Fi network suggestions are registered
         WifiSuggestionManager.ensureSuggestionRegistered(this)
 
-        AppLogger.watchdog(TAG, ">>> Starting Campus Auto-Reconnect Watchdog (Wi-Fi suggestion refreshed, actively searching for campus APs)...")
+        AppLogger.watchdog(TAG, ">>> Starting Campus Auto-Reconnect Watchdog (actively searching for campus APs)...")
 
         autoReconnectWatchdogJob = serviceScope.launch {
             val startTime = SystemClock.elapsedRealtime()
@@ -943,6 +961,13 @@ class WifiKeepaliveService : Service() {
                 if (elapsed > 15 * 60 * 1000L) { // 15-minute maximum watchdog lifetime
                     AppLogger.watchdog(TAG, "Watchdog: 15-minute timeout reached without reconnecting. Entering quiet standby.")
                     break
+                }
+
+                // Release locks after 3 minutes if no reconnect to preserve battery
+                if (elapsed > 3 * 60_000L && wakeLock?.isHeld == true) {
+                    AppLogger.watchdog(TAG, "Watchdog: 3 minutes elapsed without reconnect, releasing locks for quiet standby.")
+                    releaseLocks()
+                    cancelHeartbeat()
                 }
 
                 val sleepDelay = when {
@@ -981,11 +1006,6 @@ class WifiKeepaliveService : Service() {
 
                 AppLogger.watchdog(TAG, "Watchdog Attempt #$attempt (elapsed ${elapsed / 1000}s): scanTriggered=$scanTriggered")
 
-                // Periodically re-ensure network suggestion is active
-                if (attempt % 5 == 0) {
-                    WifiSuggestionManager.ensureSuggestionRegistered(this@WifiKeepaliveService)
-                }
-
                 try {
                     @Suppress("DEPRECATION")
                     val scanList = wm.scanResults
@@ -994,6 +1014,11 @@ class WifiKeepaliveService : Service() {
                         AppLogger.watchdog(TAG, "  -> Visible campus APs (${campusScan.size}): ${campusScan.map { "${it.BSSID} (${it.level}dBm, ${it.frequency}MHz)" }}")
                     }
                 } catch (_: Exception) {}
+            }
+
+            if (!portalRepository.statusFlow.value.isWifiConnected) {
+                releaseLocks()
+                cancelHeartbeat()
             }
         }
     }

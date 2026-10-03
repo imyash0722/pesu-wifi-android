@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.os.PowerManager
+import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.imyash.pesuwifi.data.AccountRepository
@@ -92,7 +93,14 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    private var lastLoginAttemptTime = 0L
+
     fun login(targetUsername: String? = null) {
+        val now = SystemClock.elapsedRealtime()
+        if (_isLoading.value || (now - lastLoginAttemptTime) < 1500L) {
+            return
+        }
+        lastLoginAttemptTime = now
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
@@ -103,6 +111,30 @@ class PortalViewModel(application: Application) : AndroidViewModel(application) 
                     _userMessage.value = result.getOrNull() ?: "Signed in successfully"
                 } else {
                     _errorMessage.value = result.exceptionOrNull()?.message ?: "Login failed"
+                }
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun switchAccount(username: String) {
+        val now = SystemClock.elapsedRealtime()
+        if (_isLoading.value || (now - lastLoginAttemptTime) < 1500L) {
+            return
+        }
+        lastLoginAttemptTime = now
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            _userMessage.value = "Switching to '$username'..."
+            try {
+                val result = portalRepository.login(username)
+                if (result.isSuccess) {
+                    _userMessage.value = "Signed in as $username"
+                } else {
+                    val err = result.exceptionOrNull()?.message ?: "Login failed"
+                    _errorMessage.value = "Login failed for '$username': $err"
                 }
             } finally {
                 _isLoading.value = false

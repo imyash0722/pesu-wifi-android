@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.5.0 — Campus AP Scale, Account Switching Debounce & Resilient Auto-Reconnect](#v150--campus-ap-scale-account-switching-debounce--resilient-auto-reconnect)
+  - [Overview & Major Highlights](#v150-overview--major-highlights)
 - [beta-v1.5.0 — Campus AP Scale & Autonomous BSSID Harvesting](#beta-v150--campus-ap-scale--autonomous-bssid-harvesting)
   - [Overview & Major Highlights](#beta-v150-overview--major-highlights)
 - [v1.4.6 — Classroom Wi-Fi Stability, Tailscale Socket Resiliency & UI Polish](#v146--classroom-wi-fi-stability-tailscale-socket-resiliency--ui-polish)
@@ -29,6 +31,37 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.5.0 — Campus AP Scale, Account Switching Debounce & Resilient Auto-Reconnect
+
+**Release Date:** October 3, 2026  
+**Git Tag:** [`v1.5.0`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.5.0)  
+**Release Type:** Official Production Release  
+**APK Assets:**  
+- `pesu-wifi-v1.5.0-stable.apk` (Production / Stable track with pre-seeded campus AP catalog)  
+- `pesu-wifi-v1.5.0-tester.apk` (Tester track with full diagnostic logs, telemetry & AP explorer)  
+
+### v1.5.0 Overview & Major Highlights
+
+- **🛑 Cyberroam DoS Flood Protection & Account Debounce**:
+  - Implemented 1500ms debounce guard and UI loading locks in `PortalViewModel.switchAccount` and `AccountsScreen`.
+  - Prevents rapid card taps from triggering Cyberroam's port 8090 brute-force protection rule (which previously banned the device IP for ~5 minutes on 5 rapid failed attempts).
+  - Gracefully terminates prior user session (`api.logout`) before logging in a newly selected account, avoiding portal session collision.
+- **🔄 Resilient Auto-Reconnect Watchdog with WakeLock Retention**:
+  - Maintained active CPU `WakeLock` and low-latency `WifiLock` for up to 3 minutes during disconnection events.
+  - Actively scans and triggers Android OS association across campus APs so the device does not sleep while searching for signal or require manual Quick Settings intervention.
+  - Automatically enters quiet standby after 3 minutes to preserve battery if device leaves campus.
+- **📡 Multi-SSID Network Suggestions**:
+  - Registered 10 target suggestion profiles covering `PESU-EC-Campus`, `PESU-CIE`, `AMAATRA_HOSTEL`, `Foodcourt`, and `pes south cafe` with top priority (`priority=1000`), autojoin enabled, and persistent MAC randomization.
+- **⚡ Two-Tier Campus AP Database (`BssidDatabase`)**:
+  - Bundled baseline (`assets/campus_bssids.json`) + local persistent storage + in-memory `ConcurrentHashMap` for 0ms AP validation.
+  - Cisco Enterprise twin synthesis: automatically maps dual-band partner BSSIDs (flipping bit 6 of 4th octet).
+- **🏷️ Interactive AP Explorer & JSON Export**:
+  - Live AP counter, router telemetry, room/floor tagging dialog, and 1-tap JSON export sheet in tester builds.
+- **🛡️ Rock-Solid Foreground Keepalive**:
+  - Preserved continuous `WifiKeepaliveService` with `START_STICKY`, ongoing notification, and dual-redundant RTC alarms (`AlarmManager.setExactAndAllowWhileIdle`), verified on Android 14 through Android 17.
 
 ---
 

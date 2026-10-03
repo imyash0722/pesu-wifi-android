@@ -330,6 +330,13 @@ class PortalRepository(
                 AppLogger.w("PortalRepository", "Login aborted: No password saved for $username")
                 return@withContext Result.failure<String>(Exception("No password saved for '$username'"))
             }
+        val currentStatus = _statusFlow.value
+        val currentUser = currentStatus.activeUsername
+        if (currentStatus.isLoggedIn && !currentUser.isNullOrBlank() && currentUser != username) {
+            AppLogger.i("PortalRepository", "Logging out current user '$currentUser' before switching to '$username'")
+            api.logout(currentUser)
+            kotlinx.coroutines.delay(300L)
+        }
 
         AppLogger.i("PortalRepository", "Initiating login for $username")
         val result = api.login(username, password)
