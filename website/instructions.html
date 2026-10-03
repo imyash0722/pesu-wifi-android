@@ -855,13 +855,13 @@
       <p>Download the latest verified stable APK and enjoy uninterrupted Wi-Fi across campus.</p>
       
       <div class="actions">
-        <a href="https://github.com/imyash0722/pesu-wifi-android/releases/latest" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+        <a href="https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.3/pesu-wifi-v1.7.3-stable.apk" class="btn btn-primary" data-download-apk download="pesu-wifi-v1.7.3-stable.apk">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span>Download Stable APK (v1.7.3)</span>
+          <span>Download Latest Stable APK</span>
         </a>
 
         <a href="./index.html" class="btn btn-secondary">
@@ -884,5 +884,27 @@
 
   </div>
 
+  <script>
+    // Directly download the latest stable APK asset
+    (function() {
+      fetch("https://api.github.com/repos/imyash0722/pesu-wifi-android/releases/latest")
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data && Array.isArray(data.assets)) {
+            var stableAsset = data.assets.find(function(a) {
+              return a.name.endsWith("-stable.apk") || a.name === "app-stable-release.apk" || a.name.includes("stable");
+            });
+            if (stableAsset && stableAsset.browser_download_url) {
+              var btn = document.querySelector('[data-download-apk]');
+              if (btn) {
+                btn.href = stableAsset.browser_download_url;
+                btn.setAttribute('download', stableAsset.name);
+              }
+            }
+          }
+        })
+        .catch(function() {});
+    })();
+  </script>
 </body>
 </html>
