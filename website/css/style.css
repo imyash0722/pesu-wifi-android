@@ -368,6 +368,14 @@ body {
   box-shadow: 0 0 0 3px rgba(108, 110, 54, 0.2);
 }
 
+.form-group textarea {
+  resize: none;
+  min-height: 130px;
+  max-height: 400px;
+  overflow-y: auto;
+  line-height: 1.55;
+}
+
 .form-actions {
   display: flex;
   flex-wrap: wrap;

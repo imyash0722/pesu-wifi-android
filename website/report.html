@@ -211,6 +211,14 @@
       box-shadow: 0 0 0 3px rgba(108, 110, 54, 0.2);
     }
 
+    .form-group textarea {
+      resize: none;
+      min-height: 130px;
+      max-height: 400px;
+      overflow-y: auto;
+      line-height: 1.55;
+    }
+
     .form-actions {
       display: flex;
       flex-wrap: wrap;
@@ -430,7 +438,13 @@
       var githubBtn = document.getElementById('openGithubIssueBtn');
       var statusDiv = document.getElementById('formStatus');
 
-      if (!form) return;
+      var descTextarea = document.getElementById('issueDescription');
+      if (descTextarea) {
+        descTextarea.addEventListener('input', function() {
+          this.style.height = 'auto';
+          this.style.height = Math.min(400, Math.max(130, this.scrollHeight)) + 'px';
+        });
+      }
 
       form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -483,6 +497,9 @@
           statusDiv.innerHTML = '✓ <strong>Report submitted successfully!</strong> Thank you for your feedback. We will investigate this promptly.';
           statusDiv.style.display = 'block';
           form.reset();
+          if (descTextarea) {
+            descTextarea.style.height = '130px';
+          }
           document.getElementById('appVersion').value = appVersion;
         })
         .catch(function(err) {
