@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 740" width="100%" height="100%">
+  <defs>
+    <linearGradient id="phoneBorder2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+  </defs>
+
+  <rect x="10" y="10" width="340" height="720" rx="44" fill="#0B0F19" stroke="url(#phoneBorder2)" stroke-width="6" />
+  <circle cx="180" cy="32" r="7" fill="#1E293B" />
+
+  <!-- Status Bar -->
+  <text x="36" y="36" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600">14:37</text>
+  <rect x="302" y="27" width="22" height="12" rx="3" fill="none" stroke="#94A3B8" stroke-width="1.5" />
+  <rect x="304" y="29" width="16" height="8" rx="1.5" fill="#10B981" />
+
+  <!-- Header -->
+  <path d="M40 78 L32 84 L40 90" fill="none" stroke="#F1F5F9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="56" y="88" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="700">Accounts</text>
+
+  <!-- Info box -->
+  <rect x="28" y="115" width="304" height="60" rx="16" fill="#1E293B" fill-opacity="0.6" />
+  <text x="44" y="140" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12">Stored credentials are encrypted with AES-256 via</text>
+  <text x="44" y="158" fill="#38BDF8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600">AndroidX MasterKey Hardware Keystore.</text>
+
+  <!-- Account Item 1 (Active) -->
+  <rect x="28" y="195" width="304" height="76" rx="20" fill="#131C31" stroke="#3B82F6" stroke-width="1.5" />
+  <circle cx="60" cy="233" r="18" fill="#3B82F6" />
+  <text x="60" y="239" text-anchor="middle" fill="#FFFFFF" font-size="14" font-weight="bold">U1</text>
+  <text x="90" y="226" fill="#F1F5F9" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="600">PES1UG20CS001</text>
+  <rect x="90" y="235" width="56" height="18" rx="9" fill="#10B981" fill-opacity="0.2" />
+  <text x="118" y="248" text-anchor="middle" fill="#34D399" font-size="10" font-weight="700">ACTIVE</text>
+  <!-- Radio checked -->
+  <circle cx="304" cy="233" r="10" fill="none" stroke="#3B82F6" stroke-width="2" />
+  <circle cx="304" cy="233" r="5" fill="#3B82F6" />
+
+  <!-- Account Item 2 -->
+  <rect x="28" y="285" width="304" height="76" rx="20" fill="#131C31" stroke="#1E293B" stroke-width="1" />
+  <circle cx="60" cy="323" r="18" fill="#64748B" />
+  <text x="60" y="329" text-anchor="middle" fill="#FFFFFF" font-size="14" font-weight="bold">U2</text>
+  <text x="90" y="316" fill="#CBD5E1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="600">PES1UG20CS105</text>
+  <text x="90" y="338" fill="#64748B" font-size="12">Tap to switch active session</text>
+  <!-- Radio unchecked -->
+  <circle cx="304" cy="323" r="10" fill="none" stroke="#475569" stroke-width="2" />
+
+  <!-- Account Item 3 -->
+  <rect x="28" y="375" width="304" height="76" rx="20" fill="#131C31" stroke="#1E293B" stroke-width="1" />
+  <circle cx="60" cy="413" r="18" fill="#64748B" />
+  <text x="60" y="419" text-anchor="middle" fill="#FFFFFF" font-size="14" font-weight="bold">U3</text>
+  <text x="90" y="406" fill="#CBD5E1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="600">PES1UG21CS200</text>
+  <text x="90" y="428" fill="#64748B" font-size="12">Tap to switch active session</text>
+  <circle cx="304" cy="413" r="10" fill="none" stroke="#475569" stroke-width="2" />
+
+  <!-- Import / Export Actions -->
+  <rect x="28" y="475" width="146" height="44" rx="22" fill="#1E293B" />
+  <text x="101" y="502" text-anchor="middle" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600">Import CLI JSON</text>
+
+  <rect x="186" y="475" width="146" height="44" rx="22" fill="#1E293B" />
+  <text x="259" y="502" text-anchor="middle" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600">Export Backup</text>
+
+  <!-- Add Account Button -->
+  <rect x="28" y="540" width="304" height="52" rx="26" fill="#2563EB" />
+  <text x="180" y="572" text-anchor="middle" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="15" font-weight="700">+ Add Account</text>
+
+  <rect x="130" y="718" width="100" height="4" rx="2" fill="#334155" />
+</svg>

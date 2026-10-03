@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 740" width="100%" height="100%">
+  <defs>
+    <linearGradient id="phoneBorder3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+  </defs>
+
+  <rect x="10" y="10" width="340" height="720" rx="44" fill="#0B0F19" stroke="url(#phoneBorder3)" stroke-width="6" />
+  <circle cx="180" cy="32" r="7" fill="#1E293B" />
+
+  <!-- Status Bar -->
+  <text x="36" y="36" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600">14:37</text>
+  <rect x="302" y="27" width="22" height="12" rx="3" fill="none" stroke="#94A3B8" stroke-width="1.5" />
+  <rect x="304" y="29" width="16" height="8" rx="1.5" fill="#10B981" />
+
+  <!-- Header -->
+  <path d="M40 78 L32 84 L40 90" fill="none" stroke="#F1F5F9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="56" y="88" fill="#F8FAFC" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="700">Live Diagnostics</text>
+  <circle cx="320" cy="82" r="14" fill="#1E293B" />
+  <!-- Share/export icon -->
+  <path d="M316 82 L324 76 M316 82 L324 88 M316 82 H314" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" />
+
+  <!-- Filter chips -->
+  <rect x="28" y="112" width="52" height="28" rx="14" fill="#2563EB" />
+  <text x="54" y="130" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="bold">ALL</text>
+
+  <rect x="88" y="112" width="60" height="28" rx="14" fill="#1E293B" />
+  <text x="118" y="130" text-anchor="middle" fill="#94A3B8" font-size="12" font-weight="600">ROAM</text>
+
+  <rect x="156" y="112" width="70" height="28" rx="14" fill="#1E293B" />
+  <text x="191" y="130" text-anchor="middle" fill="#94A3B8" font-size="12" font-weight="600">PORTAL</text>
+
+  <rect x="234" y="112" width="60" height="28" rx="14" fill="#1E293B" />
+  <text x="264" y="130" text-anchor="middle" fill="#94A3B8" font-size="12" font-weight="600">WIFI</text>
+
+  <!-- Telemetry Strip -->
+  <rect x="28" y="152" width="304" height="60" rx="14" fill="#131C31" stroke="#1E293B" stroke-width="1" />
+  <text x="40" y="174" fill="#64748B" font-size="11">BSSID: <tspan fill="#F1F5F9" font-weight="600">c8:a6:08:52:17:60</tspan></text>
+  <text x="40" y="196" fill="#64748B" font-size="11">RSSI: <tspan fill="#10B981" font-weight="600">-62 dBm (Ch 11)</tspan></text>
+  <text x="190" y="174" fill="#64748B" font-size="11">GW: <tspan fill="#F1F5F9" font-weight="600">10.14.142.1</tspan></text>
+  <text x="190" y="196" fill="#64748B" font-size="11">IP: <tspan fill="#38BDF8" font-weight="600">10.14.143.138</tspan></text>
+
+  <!-- Terminal Window Log View -->
+  <rect x="28" y="224" width="304" height="420" rx="16" fill="#050811" stroke="#1E293B" stroke-width="1" />
+
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="10.5">
+    <text x="38" y="248" fill="#64748B">[14:37:22.185] <tspan fill="#3B82F6">[INFO]</tspan> <tspan fill="#94A3B8">WifiSuggestion active</tspan></text>
+    <text x="38" y="272" fill="#64748B">[14:37:22.576] <tspan fill="#10B981">[INFO]</tspan> <tspan fill="#F1F5F9">Portal probe: 200 (159ms)</tspan></text>
+    <text x="38" y="296" fill="#64748B">[14:37:22.649] <tspan fill="#3B82F6">[DEBUG]</tspan> <tspan fill="#94A3B8">WifiKeepaliveService start</tspan></text>
+    <text x="38" y="320" fill="#64748B">[14:37:22.660] <tspan fill="#3B82F6">[INFO]</tspan> <tspan fill="#94A3B8">[onAvailable] Net: 258</tspan></text>
+    <text x="38" y="344" fill="#64748B">[14:37:22.688] <tspan fill="#F59E0B">[ROAM]</tspan> <tspan fill="#FCD34D">Captive flag active: Net 258</tspan></text>
+    <text x="38" y="368" fill="#64748B">[14:37:22.699] <tspan fill="#10B981">[FAST]</tspan> <tspan fill="#34D399">⚡ FAST RE-AUTH: deltatime-1</tspan></text>
+    <text x="38" y="392" fill="#64748B">[14:37:22.723] <tspan fill="#3B82F6">[PORTAL]</tspan> <tspan fill="#94A3B8">POST 192.168.254.1:8090</tspan></text>
+    <text x="38" y="416" fill="#64748B">[14:37:22.841] <tspan fill="#10B981">[SUCCESS]</tspan> <tspan fill="#A7F3D0">status=LIVE (117ms)</tspan></text>
+    <text x="38" y="440" fill="#64748B">[14:37:22.842] <tspan fill="#3B82F6">[KEEPALIVE]</tspan> <tspan fill="#94A3B8">Loop tick: next in 124s</tspan></text>
+    <text x="38" y="464" fill="#64748B">[14:37:24.110] <tspan fill="#64748B">[INFO]</tspan> <tspan fill="#64748B">Network reported validated</tspan></text>
+  </g>
+
+  <!-- Clear / Refresh Bar -->
+  <rect x="28" y="656" width="304" height="42" rx="21" fill="#1E293B" />
+  <text x="180" y="682" text-anchor="middle" fill="#94A3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="600">Export Full Diagnostic Logcat</text>
+
+  <rect x="130" y="718" width="100" height="4" rx="2" fill="#334155" />
+</svg>
