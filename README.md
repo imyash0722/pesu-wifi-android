@@ -28,6 +28,8 @@ Native Android companion app for PESU captive portal login, session management, 
 - **In-App Diagnostic Logs**: Live timestamped log viewer with level filtering, keyword search, 1-tap copy, and Android system export sheet.
 - **Quick Settings Tile**: Add the **PESU WiFi** tile to your notification pull-down shade for instant 1-tap toggle.
 - **Hardware-Backed Credential Storage**: Encrypted with Android Jetpack `EncryptedSharedPreferences` (AES-256 GCM) backed by Android Keystore.
+- **Two-Tier Campus AP Database & Cisco Twin Synthesis (v1.5)**: Scalable database (`assets/campus_bssids.json` + persistent storage + in-memory `ConcurrentHashMap`) mapping campus routers, automatically deriving Cisco dual-band twins (flipping bit 6 of 4th octet) for zero-latency AP recognition.
+- **Cyberroam DoS Flood Protection & Account Debounce (v1.5)**: 1500ms debounce guard and UI loading locks to prevent rapid taps from triggering Cyberroam's 5-minute port 8090 brute-force block, with clean session logout before account switching.
 - **Multi-Account Switching**: Store multiple student/faculty accounts and easily switch active users with a single tap.
 - **Desktop JSON Import/Export**: Directly paste or export `config.json` compatible with the desktop `pesu-wifi` CLI.
 
@@ -53,7 +55,7 @@ Requires Java 17 and Android SDK:
 export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
 
 # Run unit tests
-./gradlew testDebugUnitTest
+./gradlew test
 
 # Build signed release APKs (both Stable and Tester)
 ./gradlew assembleRelease
@@ -83,7 +85,7 @@ adb install -r app/build/outputs/apk/beta/release/app-beta-release.apk
 ## 📱 Quick Setup Guide for Students
 
 1. **Download & Install**:
-   - Download the latest **[Stable APK (v1.7.0)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)**.
+   - Download the latest **[Stable APK (v1.7.1)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)**.
    - If prompted by your browser or files app, tap **Allow from this source** to permit sideload installation.
 2. **Permissions on First Launch**:
    - **Notifications**: Tap **Allow** (displays ongoing connection status and keepalive heartbeat).
@@ -102,6 +104,7 @@ adb install -r app/build/outputs/apk/beta/release/app-beta-release.apk
 ## Release History & Changelog
 
 See [**CHANGELOG.md**](CHANGELOG.md) for full commit-by-commit technical breakdowns:
+- [**v1.7.1**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.1) — Amaatra Hostel 172.16.1.1 gateway resolution, multi-candidate gateway probing with captive redirect discovery, and modern Android (13–16) SSID/BSSID unmasking.
 - [**v1.7.0**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.0) — Smart strongest AP scanning & prioritized connection, dynamic dual-gateway probing (EC Campus & Amaatra), 120s &plusmn;30s jittered keepalive daemon, updated earthy launcher icons, and minimalist GitHub Pages landing page.
 - [**v1.6.1**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.6.1) — OEM external battery whitelist manual override, first-launch permissions cold-boot prompt, top bar UI declutter, and internal service hardening.
 - [**v1.6.0**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.6.0) — Unified Android system call AP switching (v1.5) with continuous 60s keepalive engine (v1.4), RouterPing ICMP/TCP reachability verification, Android 16 (API 36) compatibility, and 16 KB page-aligned packaging.
