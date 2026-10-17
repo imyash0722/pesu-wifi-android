@@ -5,6 +5,8 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
 ---
 
 ## Table of Contents
+- [v1.7.4 — Theme Contrast Fix & Universal Logs](#v174--theme-contrast-fix--universal-logs)
+  - [Overview & Major Highlights](#v174-overview--major-highlights)
 - [v1.7.3 — Home UI Revert, Explicit Disconnect State Fix & Keepalive Section Cleanup](#v173--home-ui-revert-explicit-disconnect-state-fix--keepalive-section-cleanup)
   - [Overview & Major Highlights](#v173-overview--major-highlights)
 - [v1.7.2 — Minimalist Unified UI & AP Roaming Notification Fix](#v172--minimalist-unified-ui--ap-roaming-notification-fix)
@@ -43,6 +45,25 @@ A comprehensive, commit-by-commit record of all architectural improvements, back
   - [Overview & Major Highlights](#v100-overview--major-highlights)
   - [Commit-by-Commit Technical Breakdown](#v100-commit-by-commit-technical-breakdown)
 - [Building & Release Verification](#building--release-verification)
+
+---
+
+## v1.7.4 — Theme Contrast Fix & Universal Logs
+
+**Release Date:** October 17, 2026  
+**Git Tag:** [`v1.7.4`](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.4)  
+**Release Type:** UI & Contrast Fix  
+**APK Assets:**  
+- `pesu-wifi-v1.7.4-stable.apk` (Production / Stable track)  
+- `pesu-wifi-v1.7.4-tester.apk` (Tester track with universal diagnostic logs & telemetry)  
+
+### v1.7.4 Overview & Major Highlights
+
+- **🎨 High-Contrast Primary Button & Monet Dynamic Color Fix**:
+  - Disabled Android 12+ wallpaper dynamic color (`dynamicColor = false`) by default to prevent light/monochrome wallpapers from washing out primary action buttons into solid white boxes.
+  - Aligned button content color with `MaterialTheme.colorScheme.onPrimary` for both enabled and disabled states.
+- **📋 Universal Diagnostic Logs on All Tracks**:
+  - Enabled universal diagnostic logging (`ENABLE_UNIVERSAL_LOGS = true`) for both `stable` and `beta` tracks, allowing all users to access real-time connection telemetry.
 
 ---
 

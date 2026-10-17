@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Report captive portal connection issues, Wi-Fi keepalive dropouts, or suggest features for PESU WiFi on Android.">
-  <meta name="theme-color" content="#675647">
+  <meta name="theme-color" content="#090c0f">
 
   <title>Report an Issue &amp; Feedback — PESU WiFi</title>
 
@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./css/style.css?v=11">
+  <link rel="stylesheet" href="./css/style.css?v=12">
 </head>
 <body>
 
@@ -44,7 +44,7 @@
 
     <!-- Header -->
     <header class="guide-header">
-      <span class="badge" style="margin-bottom: 0.85rem;">Community Support • v1.7.3</span>
+      <span class="badge" style="margin-bottom: 0.85rem;">Community Support • v1.7.4</span>
       <h1>Report an Issue or Feedback</h1>
       <p>
         Encountered a captive portal authentication dropout, classroom roaming issue, or have a feature idea for PES University? Submit your details directly below — no GitHub account required.
@@ -134,7 +134,8 @@
           <div class="form-group">
             <label for="appVersion">App Version <span class="req">*</span></label>
             <select id="appVersion" name="app_version" required>
-              <option value="v1.7.3" selected>v1.7.3 (Latest)</option>
+              <option value="v1.7.4" selected>v1.7.4 (Latest)</option>
+              <option value="v1.7.3">v1.7.3</option>
               <option value="v1.7.2">v1.7.2</option>
               <option value="v1.7.1">v1.7.1</option>
               <option value="v1.7.0">v1.7.0</option>
@@ -246,7 +247,7 @@
         var issueCategory = document.getElementById('issueCategory').value;
         var description = document.getElementById('issueDescription').value.trim();
         var contact = document.getElementById('contactInfo').value.trim();
-        var appVersion = document.getElementById('appVersion').value.trim() || 'v1.7.3';
+        var appVersion = document.getElementById('appVersion').value.trim() || 'v1.7.4';
 
         submitBtn.disabled = true;
         var originalBtnHtml = submitBtn.innerHTML;
@@ -310,7 +311,7 @@
           var issueCategory = document.getElementById('issueCategory').value || "General Feedback";
           var description = document.getElementById('issueDescription').value.trim() || "No description provided.";
           var contact = document.getElementById('contactInfo').value.trim() || "N/A";
-          var appVersion = document.getElementById('appVersion').value.trim() || "v1.7.3";
+          var appVersion = document.getElementById('appVersion').value.trim() || "v1.7.4";
 
           var isFeature = issueCategory.indexOf("Feature") !== -1;
           var title = isFeature

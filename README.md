@@ -5,8 +5,8 @@ Native Android companion app for PESU captive portal login, session management, 
 [![Latest Release](https://img.shields.io/github/v/release/imyash0722/pesu-wifi-android?color=blue)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)
 [![Website](https://img.shields.io/badge/Website-GitHub_Pages-6C6E36.svg)](https://imyash0722.github.io/pesu-wifi-android/)
 [![Setup Guide](https://img.shields.io/badge/Setup_Guide-Visual_Instructions-E3BD90.svg)](https://imyash0722.github.io/pesu-wifi-android/instructions.html)
-[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.7.3-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.3/pesu-wifi-v1.7.3-stable.apk)
-[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.7.3-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.3/pesu-wifi-v1.7.3-tester.apk)
+[![Download Stable APK](https://img.shields.io/badge/Download-Stable_APK_v1.7.4-success.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.4/pesu-wifi-v1.7.4-stable.apk)
+[![Download Tester APK](https://img.shields.io/badge/Download-Tester_APK_v1.7.4-orange.svg)](https://github.com/imyash0722/pesu-wifi-android/releases/download/v1.7.4/pesu-wifi-v1.7.4-tester.apk)
 [![Changelog](https://img.shields.io/badge/Changelog-Release_Notes-green.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -129,6 +129,7 @@ adb install -r app/build/outputs/apk/beta/release/app-beta-release.apk
 ## Release History & Changelog
 
 See [**CHANGELOG.md**](CHANGELOG.md) for full commit-by-commit technical breakdowns:
+- [**v1.7.4**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.4) — Small UI changes: resolved primary Connect button contrast, enabled universal logs across tracks.
 - [**v1.7.3**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.3) — Reverted two-button Home UI with keepalive section removed, fixed explicit disconnect loop state override, and responsive logout timeout.
 - [**v1.7.2**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.2) — Minimalist unified connection & credential action button, decluttered Home UI, false AP roaming notification fix, and internet validation priority over port 8090.
 - [**v1.7.1**](https://github.com/imyash0722/pesu-wifi-android/releases/tag/v1.7.1) — Amaatra Hostel 172.16.1.1 gateway resolution, multi-candidate gateway probing with captive redirect discovery, and modern Android (13–16) SSID/BSSID unmasking.

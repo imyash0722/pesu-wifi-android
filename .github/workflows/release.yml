@@ -45,4 +45,4 @@ jobs:
         with:
           files: release-apk/*.apk
           prerelease: ${{ contains(github.ref, 'beta') }}
-          generate_release_notes: true
+          body: "Small UI changes"

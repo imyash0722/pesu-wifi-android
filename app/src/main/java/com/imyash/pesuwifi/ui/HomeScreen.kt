@@ -141,22 +141,25 @@ fun HomeScreen(
         label = "pulseScale"
     )
 
-    val isConnected = state.status.isWifiConnected && state.status.isPesuWifi
+    val isWifiConnected = state.status.isWifiConnected
+    val isPesuWifi = state.status.isPesuWifi
+    val isPortalOnline = state.status.isPortalOnline
+    val isConnected = isWifiConnected && isPesuWifi
     val isLoggedIn = state.status.isLoggedIn
-    val isExternalWifi = state.status.isWifiConnected && !state.status.isPesuWifi
+    val isExternalWifi = isWifiConnected && !isPesuWifi
 
     // Status color & text
     val statusColor = when {
-        !state.status.isWifiConnected -> MaterialTheme.colorScheme.onSurfaceVariant
+        !isWifiConnected -> MaterialTheme.colorScheme.onSurfaceVariant
         isExternalWifi -> MaterialTheme.colorScheme.outline
         isLoggedIn -> StatusGreen
         isConnected -> StatusAmber
         else -> StatusAmber
     }
     val statusTitle = when {
-        !state.status.isWifiConnected -> "Wi-Fi Disconnected"
-        !state.status.isPesuWifi -> "External Wi-Fi"
-        !state.status.isPortalOnline -> "Portal Unreachable"
+        !isWifiConnected -> "Wi-Fi Disconnected"
+        !isPesuWifi -> "External Wi-Fi"
+        !isPortalOnline -> "Portal Unreachable"
         isLoggedIn -> "Session Active"
         else -> "Session Inactive"
     }
@@ -241,7 +244,7 @@ fun HomeScreen(
                         )
                 ) {
                     Icon(
-                        imageVector = if (state.status.isWifiConnected) Icons.Default.Wifi else Icons.Default.WifiOff,
+                        imageVector = if (isWifiConnected) Icons.Default.Wifi else Icons.Default.WifiOff,
                         contentDescription = null,
                         tint = if (isConnected) statusColor else if (isExternalWifi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(48.dp)
@@ -288,9 +291,9 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = when {
-                        !state.status.isWifiConnected -> "Disconnected"
+                        !isWifiConnected -> "Disconnected"
                         isExternalWifi -> "External Wi-Fi"
-                        !state.status.isPortalOnline -> "Gateway unreachable"
+                        !isPortalOnline -> "Gateway unreachable"
                         isLoggedIn -> "Authenticated"
                         isConnected -> "Connected, not logged in"
                         else -> "Connecting..."
@@ -340,6 +343,9 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // ── Primary action button ─────────────────────────────────────
+            val buttonContainerColor = if (isLoggedIn) StatusRed else MaterialTheme.colorScheme.primary
+            val buttonContentColor = if (isLoggedIn) Color.White else MaterialTheme.colorScheme.onPrimary
+
             Button(
                 onClick = {
                     if (isLoggedIn) viewModel.logout() else viewModel.connectAndLogin()
@@ -349,22 +355,24 @@ fun HomeScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(50.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isLoggedIn) StatusRed else MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
+                    containerColor = buttonContainerColor,
+                    contentColor = buttonContentColor,
+                    disabledContainerColor = buttonContainerColor.copy(alpha = 0.4f),
+                    disabledContentColor = buttonContentColor.copy(alpha = 0.6f)
                 ),
                 enabled = !state.isLoading && state.accounts.isNotEmpty()
             ) {
                 if (state.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(22.dp),
-                        color = Color.White,
+                        color = buttonContentColor,
                         strokeWidth = 2.5.dp
                     )
                 } else {
                     Icon(
                         imageVector = if (isLoggedIn) Icons.AutoMirrored.Filled.Logout else Icons.AutoMirrored.Filled.Login,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = buttonContentColor,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
@@ -372,7 +380,7 @@ fun HomeScreen(
                         text = if (isLoggedIn) "Disconnect" else "Connect",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = buttonContentColor
                     )
                 }
             }

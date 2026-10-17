@@ -1,66 +1,28 @@
-/* "STUDY HARD" Palette Stylesheet — PESU WiFi
-   Primary: #675647 | Accent Amber: #E3BD90 | Neutral Sand: #DFD3B5
-   Neutral Stone: #C0BDBC | Accent Olive: #6C6E36 | Dark Text: #3B3B3B
-*/
-
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
+/* PESU WiFi — charcoal surfaces, mint accents, always-dark native controls. */
 :root {
-  --bg: #FAF7F2;
-  --surface: #F2EDE4;
-  --surface-border: #DFD3B5;
-  --text: #3B3B3B;
-  --text-muted: #675647;
-  --brand-title: #675647;
-  --badge-bg: #E3BD90;
-  --badge-border: #D1A774;
-  --badge-text: #2E251E;
-  --btn-primary-bg: #6C6E36;
-  --btn-primary-hover: #585A2A;
-  --btn-primary-text: #FFFFFF;
-  --btn-primary-shadow: 0 4px 14px rgba(108, 110, 54, 0.3);
-  --btn-secondary-bg: #EFE8DA;
-  --btn-secondary-border: #DFD3B5;
-  --btn-secondary-text: #675647;
-  --btn-secondary-hover: #DFD3B5;
-  --footer-text: #675647;
-  --footer-border: #DFD3B5;
-  --shadow-card: 0 10px 30px rgba(103, 86, 71, 0.08);
-  --shadow-mockup: drop-shadow(0 20px 30px rgba(103, 86, 71, 0.22));
-  --notice-bg: #FFF8EE;
-  --notice-border: #E3BD90;
-  --notice-title: #7A531A;
-  --notice-shadow: 0 10px 24px rgba(227, 189, 144, 0.25);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1B1714;
-    --surface: #26201B;
-    --surface-border: #3D352E;
-    --text: #F2EDE4;
-    --text-muted: #DFD3B5;
-    --brand-title: #E3BD90;
-    --badge-bg: #2E2721;
-    --badge-border: #675647;
-    --badge-text: #E3BD90;
-    --btn-primary-bg: #6C6E36;
-    --btn-primary-hover: #7E8140;
-    --btn-primary-text: #FFFFFF;
-    --btn-primary-shadow: 0 4px 18px rgba(108, 110, 54, 0.45);
-    --btn-secondary-bg: #29231E;
-    --btn-secondary-border: #4D4238;
-    --btn-secondary-text: #DFD3B5;
-    --btn-secondary-hover: #38302A;
-    --footer-text: #C0BDBC;
-    --footer-border: #38302A;
-    --shadow-card: 0 14px 35px rgba(0, 0, 0, 0.45);
-    --shadow-mockup: drop-shadow(0 25px 40px rgba(0, 0, 0, 0.65));
-    --notice-bg: #2E251E;
-    --notice-border: #A37C4C;
-    --notice-title: #E3BD90;
-    --notice-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  }
+  color-scheme: dark;
+  --bg: #090c0f;
+  --surface: #11171c;
+  --surface-border: #283239;
+  --text: #dce5e8;
+  --text-muted: #a1afb7;
+  --brand-title: #f3f7f8;
+  --badge-bg: #172b26;
+  --badge-border: #315148;
+  --badge-text: #92e4c5;
+  --btn-primary-bg: #92e4c5;
+  --btn-primary-hover: #b1f0d8;
+  --btn-primary-text: #09271d;
+  --btn-primary-shadow: 0 4px 20px #00000030;
+  --btn-secondary-hover: #1e2a30;
+  --footer-text: #97a6af;
+  --footer-border: #283239;
+  --shadow-card: 0 16px 48px #00000024;
+  --shadow-mockup: drop-shadow(0 24px 32px #00000066);
+  --notice-bg: #12211e;
+  --notice-border: #315148;
+  --notice-title: #b1f0d8;
+  --notice-shadow: none;
 }
 
 html {
@@ -136,7 +98,7 @@ body {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(103, 86, 71, 0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .nav-links {
@@ -190,7 +152,7 @@ body {
   height: 58px;
   border-radius: 16px;
   flex-shrink: 0;
-  box-shadow: 0 6px 16px rgba(103, 86, 71, 0.22);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
 }
 
 .brand-title {
@@ -247,7 +209,7 @@ body {
 code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.85em;
-  background: rgba(103, 86, 71, 0.09);
+  background: rgba(146, 228, 197, 0.08);
   color: var(--brand-title);
   padding: 0.18rem 0.42rem;
   border-radius: 6px;
@@ -256,14 +218,14 @@ code {
 }
 
 [data-theme="dark"] code {
-  background: rgba(227, 189, 144, 0.12);
+  background: rgba(146, 228, 197, 0.10);
   color: var(--brand-title);
 }
 
 /* Callout Banner (Homepage AP switching reminder) */
 .callout-banner {
-  background: rgba(108, 110, 54, 0.09);
-  border: 1px solid rgba(108, 110, 54, 0.22);
+  background: rgba(146, 228, 197, 0.09);
+  border: 1px solid rgba(146, 228, 197, 0.22);
   border-left: 4px solid var(--btn-primary-bg);
   border-radius: 12px;
   padding: 0.85rem 1.1rem;
@@ -290,7 +252,7 @@ code {
 /* Notice Card (Alert / Important Pre-check Box) */
 .notice-card {
   background: var(--notice-bg);
-  border: 2px solid var(--notice-border);
+  border: 1px solid var(--notice-border);
   border-radius: 20px;
   padding: 1.75rem;
   margin-bottom: 2.75rem;
@@ -353,7 +315,7 @@ code {
   letter-spacing: -0.01em;
   text-decoration: none;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
+  white-space: normal;
   cursor: pointer;
   border: none;
 }
@@ -368,7 +330,7 @@ code {
 .btn-primary:hover {
   background-color: var(--btn-primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(108, 110, 54, 0.42);
+  box-shadow: 0 6px 20px rgba(146, 228, 197, 0.42);
 }
 
 .btn-primary:active {
@@ -384,7 +346,7 @@ code {
 .btn-secondary:hover {
   background-color: var(--btn-secondary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(103, 86, 71, 0.1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
 }
 
 .btn-secondary:active {
@@ -500,7 +462,7 @@ code {
 }
 
 .form-group label .req {
-  color: #B91C1C;
+  color: #ff9caa;
   font-weight: 700;
 }
 
@@ -523,13 +485,13 @@ code {
 .form-group select:focus,
 .form-group textarea:focus {
   border-color: var(--btn-primary-bg);
-  box-shadow: 0 0 0 3px rgba(108, 110, 54, 0.22);
+  box-shadow: 0 0 0 3px rgba(146, 228, 197, 0.22);
 }
 
 .form-group select {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23675647' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1afb7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 1rem center;
   background-size: 16px 16px;
@@ -539,7 +501,7 @@ code {
 
 @media (prefers-color-scheme: dark) {
   .form-group select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23E3BD90' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a1afb7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   }
 }
 
@@ -571,15 +533,15 @@ code {
 }
 
 .form-status.success {
-  background-color: rgba(108, 110, 54, 0.15);
+  background-color: rgba(146, 228, 197, 0.15);
   border: 1px solid var(--btn-primary-bg);
   color: var(--text);
 }
 
 .form-status.error {
   background-color: rgba(185, 28, 28, 0.1);
-  border: 1px solid #B91C1C;
-  color: #B91C1C;
+  border: 1px solid #ff9caa;
+  color: #ff9caa;
 }
 
 /* Steps Section (Instructions Page) */
@@ -603,7 +565,7 @@ code {
 }
 
 .step-item:hover {
-  box-shadow: 0 14px 28px rgba(103, 86, 71, 0.12);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.12);
 }
 
 .step-badge {
@@ -674,7 +636,7 @@ code {
 
 .step-tip {
   font-size: 0.9rem;
-  background: rgba(108, 110, 54, 0.12);
+  background: rgba(146, 228, 197, 0.12);
   border-left: 3px solid var(--btn-primary-bg);
   padding: 0.65rem 0.9rem;
   border-radius: 0 8px 8px 0;
@@ -726,7 +688,7 @@ code {
 
 .oem-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
 }
 
@@ -815,7 +777,7 @@ code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.76rem;
   color: var(--btn-primary-bg);
-  background: rgba(108, 110, 54, 0.12);
+  background: rgba(146, 228, 197, 0.12);
   padding: 0.2rem 0.5rem;
   border-radius: 6px;
   word-break: break-all;
@@ -854,7 +816,7 @@ code {
 }
 
 .perm-privacy-icon {
-  color: #2E7D32;
+  color: #92e4c5;
   font-weight: bold;
 }
 
@@ -884,6 +846,73 @@ code {
 
 .guide-cta .actions {
   justify-content: center;
+}
+
+/* Shared visual rhythm and accessible interaction states. */
+body {
+  background-image: radial-gradient(ellipse at 85% 0%, #15332955, transparent 48%);
+  background-repeat: no-repeat;
+}
+.container { max-width: 1080px; padding-top: 3rem; }
+.guide-container { max-width: 1040px; }
+.hero-layout { gap: clamp(2rem, 6vw, 6rem); }
+.content, .step-content, .form-group { min-width: 0; }
+.brand-title { font-size: clamp(2.4rem, 4.5vw, 3.7rem); letter-spacing: -0.055em; }
+.brand .badge { margin-top: 0.8rem; }
+.brand-icon { width: 68px; height: 68px; }
+.description { font-size: 1.1rem; line-height: 1.85; }
+.badge { font-size: 0.7rem; letter-spacing: 0.06em; font-weight: 600; }
+.btn { min-height: 48px; border-radius: 12px; }
+.btn svg, .nav-back-link svg { flex-shrink: 0; }
+.btn-primary:hover { box-shadow: 0 6px 24px #92e4c51a; }
+.btn:disabled { opacity: 0.6; cursor: wait; transform: none; }
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--btn-primary-bg);
+  outline-offset: 4px;
+}
+::selection { background: #92e4c5; color: #09271d; }
+input::placeholder, textarea::placeholder { color: #8c9ba4; opacity: 1; }
+.callout-banner { background: #12211e; border-left-width: 2px; }
+.callout-banner a { color: var(--badge-text); text-underline-offset: 3px; }
+.content .actions { gap: 0.75rem; }
+.content .actions .btn-primary { flex-basis: 100%; }
+.top-github-btn { background: #11171ce6; backdrop-filter: blur(16px); }
+.preview {
+  padding: 2rem;
+  border: 1px solid #28323980;
+  border-radius: 40px;
+  background: radial-gradient(ellipse at 50% 30%, #25483b55, transparent 70%), #10161a80;
+}
+.mockup.device-capture, .step-mockup .device-capture {
+  border: 6px solid #252d32;
+  border-radius: 34px;
+  box-shadow: 0 0 0 1px #48545c, 0 24px 48px #00000066;
+  max-width: 260px;
+}
+.guide-header { padding: 1.5rem 0; }
+.guide-header h1 { max-width: 850px; font-size: clamp(1.65rem, 4vw, 2.8rem); letter-spacing: -0.045em; }
+.steps-section { gap: 1.5rem; }
+.step-item, .report-card, .oem-section, .guide-cta {
+  background: linear-gradient(135deg, #151d22e6, #10161bf2);
+  box-shadow: inset 0 1px #ffffff03;
+}
+.step-item { gap: 2.5rem; padding: 2.5rem; }
+.step-item:hover { box-shadow: inset 0 1px #ffffff06, 0 14px 28px #00000020; }
+.step-mockup { padding: 1rem; background: #090c0f66; border-radius: 24px; }
+.step-mockup img { max-width: 300px; width: 100%; }
+.step-tip { background: #92e4c509; border-left-width: 2px; }
+.step-crucial { border-color: var(--badge-border); }
+.step-crucial .step-badge { background: var(--btn-primary-bg); color: var(--btn-primary-text); }
+.oem-card { background: #0c1216; }
+.perm-card { background: #11171c; border-radius: 14px; }
+.perm-constant { background: #92e4c50d; }
+.guide-cta { background: radial-gradient(ellipse at top, #21433655, transparent 75%), #11171c; }
+.form-group input, .form-group select, .form-group textarea { border-width: 1px; background-color: #0c1216; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; }
+  .btn:hover, .mockup:hover, .step-mockup img:hover, .nav-back-link:hover { transform: none; }
 }
 
 /* Responsive Media Queries */
@@ -1016,7 +1045,7 @@ code {
     font-size: 0.86rem;
     padding: 0.5rem 0.6rem;
     text-align: center;
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .guide-header {
@@ -1265,4 +1294,16 @@ code {
     padding: 0.85rem 1rem;
     font-size: 0.9rem;
   }
+}
+
+@media (max-width: 768px) {
+  .container { padding-top: 4rem; }
+  .preview { width: min(100%, 350px); margin: 0 auto; padding: 1.5rem; border-radius: 28px; }
+  .mockup.device-capture { max-width: 230px; }
+  .step-mockup { padding: 1rem 0.5rem; }
+  .nav-links { flex-wrap: wrap; }
+}
+@media (max-width: 380px) {
+  .nav-back-link { padding: 0.5rem; font-size: 0.78rem; }
+  .actions .btn { padding-inline: 0.75rem; font-size: 0.86rem; }
 }

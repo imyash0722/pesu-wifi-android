@@ -12,12 +12,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = TealAccent,
-    secondary = TealPrimary,
+    primary = TealPrimary,
+    secondary = TealAccent,
     tertiary = StatusGreen,
     background = DarkBackground,
     surface = DarkSurface,
-    onPrimary = Color.Black,
+    onPrimary = Color.White,
     onBackground = Color.White,
     onSurface = Color.White
 )
@@ -36,7 +36,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun PesuWifiTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

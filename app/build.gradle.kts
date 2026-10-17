@@ -12,8 +12,8 @@ android {
         applicationId = "com.imyash.pesuwifi"
         minSdk = 26
         targetSdk = 34
-        versionCode = 21
-        versionName = "1.7.3"
+        versionCode = 22
+        versionName = "1.7.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -27,7 +27,7 @@ android {
         create("stable") {
             dimension = "track"
             // app ID unchanged: com.imyash.pesuwifi
-            buildConfigField("boolean", "ENABLE_UNIVERSAL_LOGS", "false")
+            buildConfigField("boolean", "ENABLE_UNIVERSAL_LOGS", "true")
             buildConfigField("boolean", "SHOW_PERMISSIONS_SECTION", "false")
         }
         create("beta") {
