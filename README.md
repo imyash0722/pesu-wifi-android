@@ -107,7 +107,7 @@ adb install -r app/build/outputs/apk/beta/release/app-beta-release.apk
 
 ---
 
-##  Quick Setup Guide for Students
+##  Quick Setup Guide 
 
 1. **Download & Install**:
    - Download the latest **[Stable APK (v1.7.3)](https://github.com/imyash0722/pesu-wifi-android/releases/latest)** or follow our **[Step-by-Step Visual Picture Guide](https://imyash0722.github.io/pesu-wifi-android/instructions.html)**.
